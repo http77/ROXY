@@ -191,14 +191,25 @@ function addNewCategory(){
       if(select.options[i].value === formattedCat) exists = true;
     }
     if(!exists){
+      // সিঙ্গেল প্রোডাক্ট ক্যাটাগরি ড্রপডাউনে যুক্ত করা
       const opt = document.createElement('option');
       opt.value = formattedCat;
       opt.innerHTML = formattedCat;
       select.appendChild(opt);
       select.value = formattedCat;
+      
       subs[formattedCat] = ["General"];
       updateSubs();
-      alert("Category added successfully!");
+
+      // বাল্ক আপলোডের সব বক্সে নতুন ক্যাটাগরি স্বয়ংক্রিয়ভাবে যুক্ত করা
+      document.querySelectorAll('.bulk-cat').forEach(catSelect => {
+        const bulkOpt = document.createElement('option');
+        bulkOpt.value = formattedCat;
+        bulkOpt.innerHTML = formattedCat;
+        catSelect.appendChild(bulkOpt);
+      });
+
+      alert("Category added successfully and synced with Bulk Upload!");
     } else {
       alert("Category already exists!");
     }
