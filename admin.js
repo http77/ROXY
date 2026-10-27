@@ -15,7 +15,7 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// Authentication & Panel Visibility
+// Authentication & Panel Visibility Control
 const loginBox = document.getElementById("loginBox");
 const dashboard = document.getElementById("dashboard");
 const loginBtn = document.getElementById("loginBtn");
@@ -70,7 +70,7 @@ if (uploadBtn) {
   });
 }
 
-// Box System Bulk Upload
+// Box System Bulk Upload Logic
 let boxCount = 0;
 
 window.addBulkBox = () => {
@@ -156,7 +156,7 @@ if (bulkBtn) {
   });
 }
 
-// Load Products, Orders and Stats
+// Load Products, Orders and Stats in Dashboard
 async function loadDashboardData() {
   // Load Products
   try {
@@ -247,5 +247,5 @@ window.deleteOrder = async (id) => {
   }
 };
 
-// Initialize
+// Initialize Box
 addBulkBox();
