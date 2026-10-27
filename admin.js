@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -15,7 +15,7 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// Authentication & Panel Visibility Control
+// Authentication & Panel Visibility Control (Fixing auto-login issue)
 const loginBox = document.getElementById("loginBox");
 const dashboard = document.getElementById("dashboard");
 const loginBtn = document.getElementById("loginBtn");
@@ -60,7 +60,8 @@ if (uploadBtn) {
 
     try {
       await addDoc(collection(db, "products"), {
-        name, img, category, subcategory, price, discountPrice, stockStatus
+        name, img, category, subcategory, price, discountPrice, stockStatus,
+        sizeStatus: { M: "In Stock", L: "In Stock", XL: "In Stock" }
       });
       alert("Product Uploaded Successfully!");
       location.reload();
@@ -137,7 +138,8 @@ if (bulkBtn) {
       }
 
       productsToUpload.push({
-        name, category, price, img, stockStatus: "In Stock"
+        name, category, price, img, stockStatus: "In Stock",
+        sizeStatus: { M: "In Stock", L: "In Stock", XL: "In Stock" }
       });
     }
 
@@ -156,7 +158,7 @@ if (bulkBtn) {
   });
 }
 
-// Load Products, Orders and Stats in Dashboard
+// Load Products, Orders and Stats in Dashboard with Size Stock Management
 async function loadDashboardData() {
   // Load Products
   try {
@@ -168,6 +170,8 @@ async function loadDashboardData() {
       pList.innerHTML = pSnap.docs.map(docSnap => {
         const p = docSnap.data();
         const id = docSnap.id;
+        const sizes = p.sizeStatus || { M: "In Stock", L: "In Stock", XL: "In Stock" };
+        
         return `
           <tr>
             <td><img src="${p.img}" alt="${p.name}"></td>
@@ -176,7 +180,16 @@ async function loadDashboardData() {
             <td>${p.subcategory || '-'}</td>
             <td>৳${p.price}</td>
             <td>${p.discountPrice ? '৳'+p.discountPrice : '-'}</td>
-            <td>${p.stockStatus || 'In Stock'}</td>
+            <td>
+              <div style="font-size:11px; line-height:1.6;">
+                M: <span style="color:${sizes.M === 'Stock Out' ? '#fda4af' : '#4ade80'}">${sizes.M}</span>
+                <button onclick="toggleSizeStock('${id}', 'M', '${sizes.M}')" style="padding:2px 6px; font-size:10px; margin-left:4px; background:${sizes.M === 'Stock Out' ? '#38bdf8' : '#32151b'}; color:#fff; border-radius:4px;">Toggle</button><br>
+                L: <span style="color:${sizes.L === 'Stock Out' ? '#fda4af' : '#4ade80'}">${sizes.L}</span>
+                <button onclick="toggleSizeStock('${id}', 'L', '${sizes.L}')" style="padding:2px 6px; font-size:10px; margin-left:4px; background:${sizes.L === 'Stock Out' ? '#38bdf8' : '#32151b'}; color:#fff; border-radius:4px;">Toggle</button><br>
+                XL: <span style="color:${sizes.XL === 'Stock Out' ? '#fda4af' : '#4ade80'}">${sizes.XL}</span>
+                <button onclick="toggleSizeStock('${id}', 'XL', '${sizes.XL}')" style="padding:2px 6px; font-size:10px; margin-left:4px; background:${sizes.XL === 'Stock Out' ? '#38bdf8' : '#32151b'}; color:#fff; border-radius:4px;">Toggle</button>
+              </div>
+            </td>
             <td>
               <button class="danger" onclick="deleteProduct('${id}')">Delete</button>
             </td>
@@ -224,6 +237,29 @@ async function loadDashboardData() {
     console.error("Orders error:", e);
   }
 }
+
+// Toggle Size Stock Status (M, L, XL Stock Out / In Stock)
+window.toggleSizeStock = async (id, sizeKey, currentStatus) => {
+  const newStatus = currentStatus === "In Stock" ? "Stock Out" : "In Stock";
+  try {
+    const pRef = doc(db, "products", id);
+    const pSnap = await getDocs(collection(db, "products"));
+    // Find current product sizes
+    let currentSizes = { M: "In Stock", L: "In Stock", XL: "In Stock" };
+    pSnap.docs.forEach(d => {
+      if(d.id === id && d.data().sizeStatus) {
+        currentSizes = { ...d.data().sizeStatus };
+      }
+    });
+    currentSizes[sizeKey] = newStatus;
+
+    await updateDoc(pRef, { sizeStatus: currentSizes });
+    alert(`Product ${sizeKey} size updated to ${newStatus}!`);
+    loadDashboardData();
+  } catch (err) {
+    alert("Error updating size stock: " + err.message);
+  }
+};
 
 // Delete Product
 window.deleteProduct = async (id) => {
