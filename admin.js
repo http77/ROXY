@@ -15,7 +15,7 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// Force session persistence so it strictly requires password and clears cache on exit
+// Strict Session Persistence: Password mandatory on entry
 setPersistence(auth, browserSessionPersistence).then(() => {
   const loginBox = document.getElementById("loginBox");
   const dashboard = document.getElementById("dashboard");
@@ -64,8 +64,7 @@ if (uploadBtn) {
 
     try {
       await addDoc(collection(db, "products"), {
-        name, img, category, subcategory, price, discountPrice, stockStatus,
-        sizeStatus: { M: "In Stock", L: "In Stock", XL: "In Stock" }
+        name, img, category, subcategory, price, discountPrice, stockStatus
       });
       alert("Product Uploaded Successfully!");
       location.reload();
@@ -142,8 +141,7 @@ if (bulkBtn) {
       }
 
       productsToUpload.push({
-        name, category, price, img, stockStatus: "In Stock",
-        sizeStatus: { M: "In Stock", L: "In Stock", XL: "In Stock" }
+        name, category, price, img, stockStatus: "In Stock"
       });
     }
 
@@ -162,9 +160,8 @@ if (bulkBtn) {
   });
 }
 
-// Load Products, Orders and Stats in Dashboard
+// Load Products with Select Box Stock Status
 async function loadDashboardData() {
-  // Load Products
   try {
     const pSnap = await getDocs(collection(db, "products"));
     const pList = document.getElementById("manageProductList");
@@ -174,34 +171,27 @@ async function loadDashboardData() {
       pList.innerHTML = pSnap.docs.map(docSnap => {
         const p = docSnap.data();
         const id = docSnap.id;
-        const sizes = p.sizeStatus || { M: "In Stock", L: "In Stock", XL: "In Stock" };
+        const currentStock = p.stockStatus || "In Stock";
         
         return `
           <tr>
             <td><img src="${p.img}" alt="${p.name}"></td>
-            <td><b>${p.name}</b></td>
-            <td>${p.category || '-'}</td>
-            <td>${p.subcategory || '-'}</td>
-            <td>৳${p.price}</td>
-            <td>${p.discountPrice ? '৳'+p.discountPrice : '-'}</td>
             <td>
-              <div style="font-size:11px; line-height:1.8;">
-                <div>M Size: <b style="color:${sizes.M === 'Stock Out' ? '#fda4af' : '#4ade80'}">${sizes.M}</b> 
-                  <button onclick="updateSizeStock('${id}', 'M', 'Stock Out')" style="background:#32151b; color:#fda4af; padding:2px 5px; border-radius:3px; cursor:pointer; margin-left:2px;">M Out</button>
-                  <button onclick="updateSizeStock('${id}', 'M', 'In Stock')" style="background:#022c22; color:#4ade80; padding:2px 5px; border-radius:3px; cursor:pointer;">M In</button>
-                </div>
-                <div>L Size: <b style="color:${sizes.L === 'Stock Out' ? '#fda4af' : '#4ade80'}">${sizes.L}</b> 
-                  <button onclick="updateSizeStock('${id}', 'L', 'Stock Out')" style="background:#32151b; color:#fda4af; padding:2px 5px; border-radius:3px; cursor:pointer; margin-left:2px;">L Out</button>
-                  <button onclick="updateSizeStock('${id}', 'L', 'In Stock')" style="background:#022c22; color:#4ade80; padding:2px 5px; border-radius:3px; cursor:pointer;">L In</button>
-                </div>
-                <div>XL Size: <b style="color:${sizes.XL === 'Stock Out' ? '#fda4af' : '#4ade80'}">${sizes.XL}</b> 
-                  <button onclick="updateSizeStock('${id}', 'XL', 'Stock Out')" style="background:#32151b; color:#fda4af; padding:2px 5px; border-radius:3px; cursor:pointer; margin-left:2px;">XL Out</button>
-                  <button onclick="updateSizeStock('${id}', 'XL', 'In Stock')" style="background:#022c22; color:#4ade80; padding:2px 5px; border-radius:3px; cursor:pointer;">XL In</button>
-                </div>
-              </div>
+              <b>${p.name}</b><br>
+              <small style="color:#9fb4c8">${p.category || '-'} (${p.subcategory || '-'})</small>
+            </td>
+            <td>৳${p.price} ${p.discountPrice ? `<span style="color:#94a3b8; text-decoration:line-through; font-size:11px;">৳${p.discountPrice}</span>` : ''}</td>
+            <td>
+              <select onchange="changeProductStock('${id}', this.value)" style="margin:0; padding:6px 8px; font-size:12px; background:#050b14; color:#38bdf8; border:1px solid #203247; border-radius:8px;">
+                <option value="In Stock" ${currentStock === 'In Stock' ? 'selected' : ''}>In Stock</option>
+                <option value="M Size Stock Out" ${currentStock === 'M Size Stock Out' ? 'selected' : ''}>M Size Stock Out</option>
+                <option value="L Size Stock Out" ${currentStock === 'L Size Stock Out' ? 'selected' : ''}>L Size Stock Out</option>
+                <option value="XL Size Stock Out" ${currentStock === 'XL Size Stock Out' ? 'selected' : ''}>XL Size Stock Out</option>
+                <option value="Stock Out" ${currentStock === 'Stock Out' ? 'selected' : ''}>All Stock Out</option>
+              </select>
             </td>
             <td>
-              <button class="danger" onclick="deleteProduct('${id}')">Delete</button>
+              <button class="danger" style="padding:6px 10px; font-size:11px;" onclick="deleteProduct('${id}')">Delete</button>
             </td>
           </tr>
         `;
@@ -248,23 +238,12 @@ async function loadDashboardData() {
   }
 }
 
-// Update Size Stock Directly
-window.updateSizeStock = async (id, sizeKey, status) => {
+// Change Product Stock Status directly via Box Select
+window.changeProductStock = async (id, newStockStatus) => {
   try {
     const pRef = doc(db, "products", id);
-    const pSnap = await getDocs(collection(db, "products"));
-    let currentSizes = { M: "In Stock", L: "In Stock", XL: "In Stock" };
-    
-    pSnap.docs.forEach(d => {
-      if(d.id === id && d.data().sizeStatus) {
-        currentSizes = { ...d.data().sizeStatus };
-      }
-    });
-
-    currentSizes[sizeKey] = status;
-    await updateDoc(pRef, { sizeStatus: currentSizes });
-    alert(`Product ${sizeKey} size marked as ${status}!`);
-    loadDashboardData();
+    await updateDoc(pRef, { stockStatus: newStockStatus });
+    alert(`Product stock updated to: ${newStockStatus}`);
   } catch (err) {
     alert("Error updating stock: " + err.message);
   }

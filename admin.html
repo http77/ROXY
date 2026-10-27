@@ -5,15 +5,53 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>ROXY | Admin</title>
 <style>
-*{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif}body{background:linear-gradient(135deg,#050b14,#0b1727 55%,#10283a);color:#f8fafc}.wrap{max-width:1200px;margin:auto;padding:24px}.login,.dashboard{max-width:1050px;margin:45px auto}.login{max-width:420px;background:#0d1726;padding:30px;border-radius:24px;box-shadow:0 20px 60px rgba(15,23,42,.1)}h1{margin-bottom:8px}p.muted{color:#9fb4c8;font-size:13px;margin-bottom:20px}input,select{width:100%;padding:12px 14px;border:1px solid #203247;border-radius:12px;margin:6px 0 12px;outline:none;background:#050b14;color:#fff}button{border:0;border-radius:12px;padding:11px 16px;font-weight:800;cursor:pointer}.primary{background:#38bdf8;color:#04111c}.danger{background:#32151b;color:#fda4af}.top{display:flex;justify-content:space-between;align-items:center;gap:15px;margin-bottom:22px}.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:15px}.stat{background:#0d1726;border:1px solid #203247;border-radius:18px;padding:20px}.stat b{font-size:30px}.panel{background:#0d1726;border:1px solid #203247;border-radius:20px;padding:20px;margin-top:18px}.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}.tab{background:#101f31;color:#fff}.tab.active{background:#38bdf8;color:#04111c}.section{display:none}.section.active{display:block}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.full{grid-column:1/-1}.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:760px}th,td{padding:11px;border-bottom:1px solid #203247;text-align:left;font-size:13px}th{background:#101f31}td img{width:55px;height:65px;object-fit:cover;border-radius:8px}.hint{background:#10283a;color:#7dd3fc;padding:12px;border-radius:12px;font-size:12px;margin-bottom:15px}.product-row-actions{display:flex;gap:6px;flex-wrap:wrap}@media(max-width:700px){.cards,.form-grid{grid-template-columns:1fr}.wrap{padding:12px}.login{margin:25px 12px}}
-.category-box{display:flex;gap:6px;align-items:center}
+*{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif}
+body{background:linear-gradient(135deg,#050b14,#0b1727 55%,#10283a);color:#f8fafc;min-height:100vh}
+.wrap{max-width:1200px;margin:auto;padding:24px}
+.login,.dashboard{max-width:1050px;margin:30px auto;padding:0 15px}
+.login{max-width:420px;background:#0d1726;padding:30px;border-radius:24px;box-shadow:0 20px 60px rgba(0,0,0,0.4);border:1px solid #203247}
+h1{margin-bottom:8px;font-size:26px}
+p.muted{color:#9fb4c8;font-size:13px;margin-bottom:20px}
+input,select{width:100%;padding:12px 14px;border:1px solid #203247;border-radius:12px;margin:6px 0 12px;outline:none;background:#050b14;color:#fff;font-size:14px}
+button{border:0;border-radius:12px;padding:11px 16px;font-weight:800;cursor:pointer}
+.primary{background:#38bdf8;color:#04111c}
+.danger{background:#32151b;color:#fda4af;border:1px solid #fda4af}
+.success-btn{background:#022c22;color:#4ade80;border:1px solid #4ade80}
+.top{display:flex;justify-content:space-between;align-items:center;gap:15px;margin-bottom:22px;flex-wrap:wrap}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:15px}
+.stat{background:#0d1726;border:1px solid #203247;border-radius:18px;padding:20px}
+.stat b{font-size:28px}
+.panel{background:#0d1726;border:1px solid #203247;border-radius:20px;padding:20px;margin-top:18px}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+.tab{background:#101f31;color:#fff}
+.tab.active{background:#38bdf8;color:#04111c}
+.section{display:none}
+.section.active{display:block}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:700px}
+th,td{padding:12px 10px;border-bottom:1px solid #203247;text-align:left;font-size:13px;vertical-align:middle}
+th{background:#101f31;color:#7dd3fc}
+td img{width:50px;height:60px;object-fit:cover;border-radius:8px}
 
 /* Box Bulk Upload Styling */
 .bulk-item{background:#050b14;border:1px solid #203247;padding:15px;border-radius:14px;margin-bottom:15px;position:relative}
 .bulk-item-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-weight:bold;color:#38bdf8;font-size:14px}
 .remove-item-btn{background:rgba(239,68,68,0.2);color:#fda4af;border:1px solid #fda4af;padding:4px 10px;border-radius:6px;font-size:12px;cursor:pointer}
 .bulk-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-@media(max-width:600px){.bulk-grid{grid-template-columns:1fr}}
+.category-box{display:flex;gap:6px;align-items:center}
+
+/* Mobile Responsive Adjustments */
+@media(max-width:768px){
+  .cards{grid-template-columns:1fr}
+  .form-grid,.bulk-grid{grid-template-columns:1fr}
+  .login,.dashboard{margin:15px auto;padding:0 8px}
+  .panel{padding:14px;border-radius:16px}
+  .tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  .tab{width:100%;text-align:center;padding:10px 6px;font-size:12px}
+  h1{font-size:22px}
+  th,td{font-size:12px;padding:8px 6px}
+}
 </style>
 </head>
 <body>
@@ -70,9 +108,18 @@
         <div><label>Sub-category</label><select id="prodSubcategory"></select></div>
         <div><label>Regular Price</label><input id="prodPrice" type="number" min="1" placeholder="1200"></div>
         <div><label>Discount Price (optional)</label><input id="prodDiscountPrice" type="number" min="0" placeholder="999"></div>
-        <div><label>Stock</label><select id="prodStockStatus"><option>In Stock</option><option>Stock Out</option></select></div>
+        <div>
+          <label>Stock Status</label>
+          <select id="prodStockStatus">
+            <option value="In Stock">In Stock</option>
+            <option value="M Size Stock Out">M Size Stock Out</option>
+            <option value="L Size Stock Out">L Size Stock Out</option>
+            <option value="XL Size Stock Out">XL Size Stock Out</option>
+            <option value="Stock Out">All Stock Out</option>
+          </select>
+        </div>
       </div>
-      <button id="uploadBtn" class="primary" style="margin-top:15px;">Upload Product</button>
+      <button id="uploadBtn" class="primary" style="margin-top:15px; width:100%;">Upload Product</button>
     </section>
 
     <!-- Box System Bulk Upload Section -->
@@ -93,7 +140,15 @@
       </div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Image</th><th>Product</th><th>Category</th><th>Sub-category</th><th>Price</th><th>Discount</th><th>Stock</th><th>Action</th></tr></thead>
+          <thead>
+            <tr>
+              <th>Image</th>
+              <th>Product Details</th>
+              <th>Price</th>
+              <th>Stock Status (Box System)</th>
+              <th>Action</th>
+            </tr>
+          </thead>
           <tbody id="manageProductList"></tbody>
         </table>
       </div>

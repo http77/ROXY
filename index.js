@@ -81,7 +81,7 @@ function renderSubcategories(){
     const isAct = (i === 0 && !activeSub) || s === activeSub;
     return `<button class="sub-btn ${isAct?"active":""}" onclick="selectSub('${val}')">${displayName}</button>`;
   }).join("");
-}
+};
 
 window.selectSub=(s)=>{
   activeSub=s;
@@ -106,7 +106,33 @@ window.renderProducts=()=>{
   
   grid.innerHTML=list.map(p=>{
     const price=Number(p.discountPrice||p.price);
-    return `<article class="card"><a href="product.html?name=${encodeURIComponent(p.name)}&price=${price}&img=${encodeURIComponent(p.img)}"><div class="card-img"><img src="${esc(p.img)}" alt="${esc(p.name)}"></div></a><div class="card-body"><span class="pill">${esc(p.subcategory||p.category)}</span><h3>${esc(p.name)}</h3><span class="price">৳${price}</span>${p.discountPrice?`<span class="old-price">৳${p.price}</span>`:""}<button class="add" onclick='addToCart(${JSON.stringify({name:p.name,price:price,img:p.img})})'>Add to Cart</button></div></article>`;
+    const stock = p.stockStatus || "In Stock";
+    
+    // স্টক আউট বা সাইজ স্টক আউট থাকলে প্রোডাক্টের ছবির উপর স্ট্যাটাস ব্যাচ দেখাবে
+    let stockBadge = "";
+    if(stock === "Stock Out") {
+      stockBadge = `<span style="position:absolute; top:10px; left:10px; background:#ef4444; color:#fff; font-size:10px; font-weight:bold; padding:4px 8px; border-radius:6px; z-index:2;">Stock Out</span>`;
+    } else if(stock.includes("Size Stock Out")) {
+      stockBadge = `<span style="position:absolute; top:10px; left:10px; background:#f59e0b; color:#fff; font-size:10px; font-weight:bold; padding:4px 8px; border-radius:6px; z-index:2;">${stock}</span>`;
+    }
+
+    return `
+      <article class="card">
+        <a href="product.html?name=${encodeURIComponent(p.name)}&price=${price}&img=${encodeURIComponent(p.img)}">
+          <div class="card-img">
+            ${stockBadge}
+            <img src="${esc(p.img)}" alt="${esc(p.name)}">
+          </div>
+        </a>
+        <div class="card-body">
+          <span class="pill">${esc(p.subcategory||p.category)}</span>
+          <h3>${esc(p.name)}</h3>
+          <span class="price">৳${price}</span>
+          ${p.discountPrice?`<span class="old-price">৳${p.price}</span>`:""}
+          <button class="add" onclick='addToCart(${JSON.stringify({name:p.name,price:price,img:p.img})})'>Add to Cart</button>
+        </div>
+      </article>
+    `;
   }).join("");
 };
 
