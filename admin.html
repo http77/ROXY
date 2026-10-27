@@ -1,94 +1,13 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>ROXY | Admin</title>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ROXY | Admin Panel</title>
 <style>
-*{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif}body{background:linear-gradient(135deg,#050b14,#0b1727 55%,#10283a);color:#f8fafc}.wrap{max-width:1200px;margin:auto;padding:24px}.login,.dashboard{max-width:1050px;margin:45px auto}.login{max-width:420px;background:#0d1726;padding:30px;border-radius:24px;box-shadow:0 20px 60px rgba(15,23,42,.1)}h1{margin-bottom:8px}p.muted{color:#9fb4c8;font-size:13px;margin-bottom:20px}input,select{width:100%;padding:12px 14px;border:1px solid #203247;border-radius:12px;margin:6px 0 12px;outline:none}button{border:0;border-radius:12px;padding:11px 16px;font-weight:800;cursor:pointer}.primary{background:#38bdf8;color:#04111c}.danger{background:#32151b;color:#fda4af}.top{display:flex;justify-content:space-between;align-items:center;gap:15px;margin-bottom:22px}.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:15px}.stat{background:#0d1726;border:1px solid #203247;border-radius:18px;padding:20px}.stat b{font-size:30px}.panel{background:#0d1726;border:1px solid #203247;border-radius:20px;padding:20px;margin-top:18px}.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}.tab{background:#101f31}.tab.active{background:#38bdf8;color:#04111c}.section{display:none}.section.active{display:block}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.full{grid-column:1/-1}.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:760px}th,td{padding:11px;border-bottom:1px solid #203247;text-align:left;font-size:13px}th{background:#101f31}td img{width:55px;height:65px;object-fit:cover;border-radius:8px}.hint{background:#10283a;color:#7dd3fc;padding:12px;border-radius:12px;font-size:12px;margin-bottom:15px}.product-row-actions{display:flex;gap:6px;flex-wrap:wrap}@media(max-width:700px){.cards,.form-grid{grid-template-columns:1fr}.wrap{padding:12px}.login{margin:25px 12px}}
-.category-box{display:flex;gap:6px;align-items:center}
-</style></head><body>
-<div id="loginBox" class="login"><h1>ROXY</h1><p class="muted">Clothing Admin Panel</p><input id="email" type="email" placeholder="Admin email"><input id="password" type="password" placeholder="Password"><button id="loginBtn" class="primary" style="width:100%">Login</button></div>
-<main id="dashboard" class="dashboard" style="display:none"><div class="top"><div><h1>ROXY Admin</h1><p class="muted">Manage T-Shirts, Shirts, Pants, Winter & customer orders.</p></div><button onclick="location.href='index.html'">← Store</button></div>
-<div class="cards"><div class="stat"><small>Products</small><br><b id="productCount">0</b></div><div class="stat"><small>Orders</small><br><b id="orderCount">0</b></div><div class="stat"><small>Allowed Categories</small><br><b id="categoryCount">4</b></div></div>
-<div class="panel"><div class="tabs">
-  <button class="tab active" onclick="showSection('uploadSection',this)">＋ Add Product</button>
-  <button class="tab" onclick="showSection('bulkUploadSection',this)">＋ Bulk Upload</button>
-  <button class="tab" onclick="showSection('manageProductSection',this)">Products</button>
-  <button class="tab" onclick="showSection('orderSection',this)">Orders</button>
-</div>
-
-<section id="uploadSection" class="section active">
-  <h2>Add New Clothing Product</h2>
-  <p class="muted">Upload new products from here. Select or add dynamic categories.</p>
-  <div class="form-grid">
-    <div><label>Product Name</label><input id="prodName" placeholder="e.g. Premium Oversized T-Shirt"></div>
-    <div><label>Image URL / Path</label><input id="prodImg" placeholder="images/product.jpg"></div>
-    <div>
-      <label>Category</label>
-      <div class="category-box">
-        <select id="prodCategory" style="margin:0; flex:1;">
-          <option>T-SHIRT</option>
-          <option>SHIRT</option>
-          <option>PANT</option>
-          <option>WINTER</option>
-        </select>
-        <button type="button" class="primary" onclick="addNewCategory()" title="Add New Category" style="padding:12px 14px; margin:0;">＋</button>
-      </div>
-    </div>
-    <div><label>Sub-category</label><select id="prodSubcategory"></select></div>
-    <div><label>Regular Price</label><input id="prodPrice" type="number" min="1" placeholder="1200"></div>
-    <div><label>Discount Price (optional)</label><input id="prodDiscountPrice" type="number" min="0" placeholder="999"></div>
-    <div><label>Stock</label><select id="prodStockStatus"><option>In Stock</option><option>Stock Out</option></select></div>
-  </div>
-  <button id="uploadBtn" class="primary" style="margin-top:15px;">Upload Product</button>
-</section>
-
-<section id="bulkUploadSection" class="section">
-  <h2>Bulk Product Upload</h2>
-  <p class="muted">Paste multiple product details or JSON format to upload together, or use CSV/Batch inputs.</p>
-  <div class="form-grid full">
-    <div><label>Bulk Data (JSON / Multi-row format)</label><textarea id="bulkDataInput" rows="6" placeholder='[{"name": "Hoodie", "price": 1500, "category": "WINTER", ...}]' style="width:100%; padding:12px; border:1px solid #203247; border-radius:12px; background:#050b14; color:#fff; outline:none;"></textarea></div>
-  </div>
-  <button id="bulkUploadBtn" class="primary" style="margin-top:15px;">Upload All Products</button>
-</section>
-
-<section id="manageProductSection" class="section"><div class="top"><div><h2>Product Management</h2><p class="muted">Edit price/discount/stock or remove products.</p></div><button class="danger" onclick="deleteLegacyProducts()">Remove Old Jersey Products</button></div><div class="table-wrap"><table><thead><tr><th>Image</th><th>Product</th><th>Category</th><th>Sub-category</th><th>Price</th><th>Discount</th><th>Stock</th><th>Action</th></tr></thead><tbody id="manageProductList"></tbody></table></div></section>
-<section id="orderSection" class="section"><h2>Customer Orders</h2><p class="muted">Order details are kept; this panel is now clothing-themed.</p><div class="table-wrap"><table><thead><tr><th>Tracking</th><th>Name</th><th>Phone</th><th>Product</th><th>Size</th><th>Address</th><th>Payment</th><th>Status</th><th>Action</th></tr></thead><tbody id="orderList"></tbody></table></div></section>
-</div></main>
-<script>
-const subs={"T-SHIRT":["Basic","Oversized","Graphic","Polo"],"SHIRT":["Formal","Casual","Oversized","Printed"],"PANT":["Jeans","Cargo","Chino","Formal"],"WINTER":["Hoodie","Jacket","Sweater","Thermal"]};
-function updateSubs(){
-  const c=document.getElementById('prodCategory').value;
-  const subList = subs[c] || ["General"];
-  document.getElementById('prodSubcategory').innerHTML=subList.map(x=>`<option>${x}</option>`).join('');
-}
-function showSection(id,btn){
-  document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
-  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
-  if(btn)btn.classList.add('active');
-}
-function addNewCategory(){
-  const newCat = prompt("Enter new category name:");
-  if(newCat && newCat.trim() !== ""){
-    const formattedCat = newCat.trim().toUpperCase();
-    const select = document.getElementById('prodCategory');
-    // Check if already exists
-    let exists = false;
-    for(let i=0; i<select.options.length; i++){
-      if(select.options[i].value === formattedCat) exists = true;
-    }
-    if(!exists){
-      const opt = document.createElement('option');
-      opt.value = formattedCat;
-      opt.innerHTML = formattedCat;
-      select.appendChild(opt);
-      select.value = formattedCat;
-      subs[formattedCat] = ["General"];
-      updateSubs();
-      alert("Category added successfully!");
-    } else {
-      alert("Category already exists!");
-    }
-  }
-}
-document.getElementById('prodCategory').addEventListener('change',updateSubs);
-updateSubs();
-</script><script type="module" src="admin.js"></script></body></html>
+:root{--bg:#07111f;--card:#0d1726;--text:#f8fafc;--muted:#9fb4c8;--line:#203247;--accent:#38bdf8;--danger:#ef4444}
+*{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif}
+body{background:var(--bg);color:var(--text);padding:20px;min-height:100vh}
+.container{max-width:900px;margin:auto}
+h1{margin-bottom:20px;font-size:28px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;

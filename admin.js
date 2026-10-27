@@ -1,160 +1,202 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, getDocs, addDoc, doc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-const firebaseConfig={apiKey:"AIzaSyCyqVbz009_W67poKQgjHLuGsLQTUFHtHw",authDomain:"bahar-sports-f2a70.firebaseapp.com",projectId:"bahar-sports-f2a70",storageBucket:"bahar-sports-f2a70.firebasestorage.app",messagingSenderId:"254621686378",appId:"1:254621686378:web:4edfdf85c40362a51cc813"};
-
-const app=initializeApp(firebaseConfig),db=getFirestore(app),auth=getAuth(app);
-
-// Allowed categories including WINTER and standard clothing categories
-const allowed=["T-SHIRT","SHIRT","PANT","WINTER"];
-
-const loginBtn=document.getElementById("loginBtn");
-loginBtn.addEventListener("click",async()=>{
-  const email=document.getElementById("email").value.trim(),password=document.getElementById("password").value.trim();
-  if(!email||!password)return alert("Please enter email and password.");
-  loginBtn.disabled=true;
-  try{
-    await signInWithEmailAndPassword(auth,email,password);
-    document.getElementById("loginBox").style.display="none";
-    document.getElementById("dashboard").style.display="block";
-    await Promise.all([loadProducts(),loadOrders()]);
-  }catch(e){
-    alert("Login failed: "+e.message);
-  }finally{
-    loginBtn.disabled=false;
-  }
-});
-
-function esc(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]))}
-
-async function loadProducts(){
-  const snap=await getDocs(collection(db,"products"));
-  document.getElementById("productCount").textContent=snap.size;
-  const list=document.getElementById("manageProductList");
-  const rows=snap.docs.map(d=>{const p=d.data(),cat=String(p.category||"").toUpperCase();return {id:d.id,p,cat}});
-  if(!rows.length){list.innerHTML='<tr><td colspan="8">No products found.</td></tr>';return}
-  list.innerHTML=rows.map(({id,p,cat})=>`<tr id="prod-${id}"><td><img src="${esc(p.img)}"></td><td><b>${esc(p.name)}</b></td><td>${esc(cat||"—")}</td><td>${esc(p.subcategory||"—")}</td><td>৳${Number(p.price||0)}</td><td><input id="disc-${id}" type="number" value="${p.discountPrice??""}" style="width:110px;margin:0"></td><td><select id="stock-${id}" style="width:125px;margin:0"><option ${p.stockStatus==="In Stock"?"selected":""}>In Stock</option><option ${p.stockStatus==="Stock Out"?"selected":""}>Stock Out</option></select></td><td><div class="product-row-actions"><button class="primary" onclick="updateProduct('${id}',${Number(p.price||0)})">Save</button><button class="danger" onclick="deleteProduct('${id}')">Delete</button></div></td></tr>`).join("");
-}
-
-window.updateProduct=async(id,regular)=>{
-  const d=document.getElementById(`disc-${id}`).value.trim(),discount=d===""?null:Number(d),stock=document.getElementById(`stock-${id}`).value;
-  if(discount!==null&&(isNaN(discount)||discount<0||discount>=regular))return alert("Discount must be less than regular price.");
-  try{
-    await updateDoc(doc(db,"products",id),{discountPrice:discount,stockStatus:stock});
-    alert("Product updated.");
-    loadProducts();
-  }catch(e){
-    alert(e.message);
-  }
+const firebaseConfig = {
+  apiKey: "AIzaSyCyqVbz009_W67poKQgjHLuGsLQTUFHtHw",
+  authDomain: "bahar-sports-f2a70.firebaseapp.com",
+  projectId: "bahar-sports-f2a70",
+  storageBucket: "bahar-sports-f2a70.firebasestorage.app",
+  messagingSenderId: "254621686378",
+  appId: "1:254621686378:web:4edfdf85c40362a51cc813"
 };
 
-window.deleteProduct=async id=>{
-  if(!confirm("Delete this product permanently?"))return;
-  try{
-    await deleteDoc(doc(db,"products",id));
-    loadProducts();
-  }catch(e){
-    alert(e.message);
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+let categories = ["T-SHIRT", "SHIRT", "PANT", "WINTER"];
+let boxCount = 0;
+
+// Load Categories in Dropdown
+function loadCategoryDropdowns() {
+  const select = document.getElementById("pCategory");
+  if (select) {
+    select.innerHTML = categories.map(c => `<option value="${c}">${c}</option>`).join("");
   }
-};
-
-window.deleteLegacyProducts=async()=>{
-  if(!confirm("This will permanently delete every product whose category is not recognized. Continue?"))return;
-  try{
-    const snap=await getDocs(collection(db,"products"));
-    let n=0;
-    for(const d of snap.docs){
-      const cat=String(d.data().category||"").toUpperCase();
-      if(!allowed.includes(cat)){
-        await deleteDoc(doc(db,"products",d.id));
-        n++;
-      }
-    }
-    alert(`Removed ${n} old product(s).`);
-    loadProducts();
-  }catch(e){
-    alert("Cleanup failed: "+e.message);
-  }
-};
-
-async function loadOrders(){
-  const snap=await getDocs(collection(db,"orders"));
-  document.getElementById("orderCount").textContent=snap.size;
-  const list=document.getElementById("orderList");
-  if(snap.empty){list.innerHTML='<tr><td colspan="9">No orders found.</td></tr>';return}
-  list.innerHTML=snap.docs.map(d=>{
-    const x=d.data();
-    return `<tr><td>${esc(x.trackingCode||x.orderId||d.id.slice(0,8).toUpperCase())}</td><td>${esc(x.name||"N/A")}</td><td>${esc(x.phone||"N/A")}</td><td>${esc(x.product||"N/A")}</td><td>${esc(x.size||"N/A")}</td><td>${esc(x.address||"N/A")}</td><td>${esc(x.payment||"Cash on Delivery")}</td><td><select id="status-${d.id}" style="margin:0;width:120px"><option ${x.status==="Pending"||!x.status?"selected":""}>Pending</option><option ${x.status==="Confirmed"?"selected":""}>Confirmed</option><option ${x.status==="Processing"?"selected":""}>Processing</option><option ${x.status==="Shipped"?"selected":""}>Shipped</option><option ${x.status==="Delivered"?"selected":""}>Delivered</option><option ${x.status==="Cancelled"?"selected":""}>Cancelled</option></select></td><td><button class="primary" onclick="updateOrderStatus('${d.id}')">Save</button></td></tr>`;
-  }).join("");
-}
-
-window.updateOrderStatus=async id=>{
-  try{
-    await updateDoc(doc(db,"orders",id),{status:document.getElementById(`status-${id}`).value});
-    alert("Order status updated.");
-  }catch(e){
-    alert(e.message);
-  }
-};
-
-// Single Product Upload Handler
-document.getElementById("uploadBtn").addEventListener("click",async()=>{
-  const name=document.getElementById("prodName").value.trim(),
-        img=document.getElementById("prodImg").value.trim(),
-        category=document.getElementById("prodCategory").value,
-        subcategory=document.getElementById("prodSubcategory").value,
-        price=Number(document.getElementById("prodPrice").value),
-        discountRaw=document.getElementById("prodDiscountPrice").value.trim(),
-        discountPrice=discountRaw===""?null:Number(discountRaw),
-        stockStatus=document.getElementById("prodStockStatus").value;
-  
-  if(!name||!img||!price)return alert("Product name, image and price are required.");
-  if(discountPrice!==null&&(isNaN(discountPrice)||discountPrice<0||discountPrice>=price))return alert("Discount must be less than regular price.");
-  
-  try{
-    await addDoc(collection(db,"products"),{name,img,category,subcategory,price,discountPrice,stockStatus,createdAt:new Date()});
-    alert("Product uploaded successfully!");
-    document.getElementById("prodName").value="";
-    document.getElementById("prodImg").value="";
-    document.getElementById("prodPrice").value="";
-    document.getElementById("prodDiscountPrice").value="";
-    loadProducts();
-  }catch(e){
-    alert("Upload failed: "+e.message);
-  }
-});
-
-// Bulk Product Upload Handler
-const bulkUploadBtn = document.getElementById("bulkUploadBtn");
-if(bulkUploadBtn){
-  bulkUploadBtn.addEventListener("click", async () => {
-    const bulkData = document.getElementById("bulkDataInput").value.trim();
-    if(!bulkData) return alert("Please enter JSON data for bulk upload.");
-    bulkUploadBtn.disabled = true;
-    try {
-      const productsArray = JSON.parse(bulkData);
-      if(!Array.isArray(productsArray)) throw new Error("JSON data must be an array of products.");
-      
-      for(let prod of productsArray){
-        await addDoc(collection(db, "products"), {
-          name: prod.name || "Unnamed Product",
-          img: prod.img || "images/product.jpg",
-          category: (prod.category || "T-SHIRT").toUpperCase(),
-          subcategory: prod.subcategory || "General",
-          price: Number(prod.price || 0),
-          discountPrice: prod.discountPrice ? Number(prod.discountPrice) : null,
-          stockStatus: prod.stockStatus || "In Stock",
-          createdAt: new Date()
-        });
-      }
-      alert("All products uploaded successfully in bulk!");
-      document.getElementById("bulkDataInput").value = "";
-      loadProducts();
-    } catch(e) {
-      alert("Bulk upload failed: " + e.message);
-    } finally {
-      bulkUploadBtn.disabled = false;
-    }
+  // Also update bulk boxes category select
+  document.querySelectorAll(".bulk-cat-select").forEach(sel => {
+    const currentVal = sel.value;
+    sel.innerHTML = categories.map(c => `<option value="${c}">${c}</option>`).join("");
+    if (currentVal && categories.includes(currentVal)) sel.value = currentVal;
   });
 }
+
+// Add Custom Category with '+' Button
+window.addCustomCategory = () => {
+  const newCat = prompt("Enter new Category Name (e.g., JERSEY, JACKET):");
+  if (newCat && newCat.trim() !== "") {
+    const formatted = newCat.trim().toUpperCase();
+    if (!categories.includes(formatted)) {
+      categories.push(formatted);
+      loadCategoryDropdowns();
+      alert(`Category "${formatted}" added successfully!`);
+    } else {
+      alert("Category already exists!");
+    }
+  }
+};
+
+// --- DYNAMIC BULK BOX SYSTEM ---
+
+// Function to add a new product box dynamically
+window.addBulkBox = () => {
+  boxCount++;
+  const container = document.getElementById("bulkContainer");
+  const boxHtml = document.createElement("div");
+  boxHtml.className = "bulk-item";
+  boxHtml.id = `bulk-box-${boxCount}`;
+
+  const catOptions = categories.map(c => `<option value="${c}">${c}</option>`).join("");
+
+  boxHtml.innerHTML = `
+    <div class="bulk-item-head">
+      <span>Product #${boxCount}</span>
+      <button type="button" class="remove-item-btn" onclick="removeBulkBox(${boxCount})">✕ Remove</button>
+    </div>
+    <div class="bulk-grid">
+      <div class="form-group">
+        <label>Product Name</label>
+        <input type="text" class="bulk-name" placeholder="e.g. Winter Jacket" required>
+      </div>
+      <div class="form-group">
+        <label>Category</label>
+        <select class="bulk-cat bulk-cat-select">${catOptions}</select>
+      </div>
+      <div class="form-group">
+        <label>Price (৳)</label>
+        <input type="number" class="bulk-price" placeholder="1500" required>
+      </div>
+      <div class="form-group">
+        <label>Image Link / Path</label>
+        <input type="text" class="bulk-img" placeholder="images/jacket.jpg" required>
+      </div>
+    </div>
+  `;
+  container.appendChild(boxHtml);
+};
+
+// Function to remove a specific box
+window.removeBulkBox = (id) => {
+  const el = document.getElementById(`bulk-box-${id}`);
+  if (el) el.remove();
+};
+
+// Upload All Bulk Products
+window.uploadBulkProducts = async () => {
+  const boxes = document.querySelectorAll(".bulk-item");
+  if (boxes.length === 0) {
+    alert("Please add at least one product box!");
+    return;
+  }
+
+  const productsToUpload = [];
+
+  for (let box of boxes) {
+    const name = box.querySelector(".bulk-name").value.trim();
+    const category = box.querySelector(".bulk-cat").value;
+    const price = Number(box.querySelector(".bulk-price").value);
+    const img = box.querySelector(".bulk-img").value.trim();
+
+    if (!name || !price || !img) {
+      alert("Please fill in Name, Price, and Image Link for all boxes!");
+      return;
+    }
+
+    productsToUpload.push({
+      name,
+      category,
+      price,
+      img,
+      stockStatus: "In Stock"
+    });
+  }
+
+  try {
+    for (let p of productsToUpload) {
+      await addDoc(collection(db, "products"), p);
+    }
+    alert(`Successfully uploaded ${productsToUpload.length} products!`);
+    document.getElementById("bulkContainer").innerHTML = "";
+    boxCount = 0;
+    addBulkBox(); // Add 1 empty box back
+    loadProductsAdmin();
+  } catch (err) {
+    console.error(err);
+    alert("Error uploading products: " + err.message);
+  }
+};
+
+// Single Product Upload
+document.getElementById("singleProductForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const name = document.getElementById("pName").value.trim();
+  const category = document.getElementById("pCategory").value;
+  const subcategory = document.getElementById("pSubcategory").value.trim();
+  const price = Number(document.getElementById("pPrice").value);
+  const img = document.getElementById("pImg").value.trim();
+
+  try {
+    await addDoc(collection(db, "products"), {
+      name, category, subcategory, price, img, stockStatus: "In Stock"
+    });
+    alert("Product Uploaded Successfully!");
+    document.getElementById("singleProductForm").reset();
+    loadProductsAdmin();
+  } catch (err) {
+    alert("Upload failed: " + err.message);
+  }
+});
+
+// Load Existing Products with Delete Button
+async function loadProductsAdmin() {
+  const grid = document.getElementById("adminProductGrid");
+  try {
+    const snap = await getDocs(collection(db, "products"));
+    if (snap.empty) {
+      grid.innerHTML = "<p style='color: var(--muted);'>No products found.</p>";
+      return;
+    }
+
+    grid.innerHTML = snap.docs.map(docSnap => {
+      const p = docSnap.data();
+      const id = docSnap.id;
+      return `
+        <div class="p-card">
+          <img src="${p.img}" alt="${p.name}">
+          <h4>${p.name}</h4>
+          <div class="p-price">৳${p.price}</div>
+          <button class="delete-btn" onclick="deleteProduct('${id}')">Delete</button>
+        </div>
+      `;
+    }).join("");
+  } catch (err) {
+    grid.innerHTML = "<p>Error loading products.</p>";
+  }
+}
+
+// Delete Product Function
+window.deleteProduct = async (id) => {
+  if (confirm("Are you sure you want to delete this product?")) {
+    try {
+      await deleteDoc(doc(db, "products", id));
+      alert("Product Deleted!");
+      loadProductsAdmin();
+    } catch (err) {
+      alert("Delete failed: " + err.message);
+    }
+  }
+};
+
+// Initialize Admin Page
+loadCategoryDropdowns();
+addBulkBox(); // Start with 1 default box
+loadProductsAdmin();
