@@ -15,38 +15,38 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// Force session persistence so it requires password on browser restart / re-entry
-setPersistence(auth, browserSessionPersistence).catch((error) => {
-  console.error("Persistence error:", error);
-});
+// Force session persistence so it strictly requires password on entry/refresh
+setPersistence(auth, browserSessionPersistence).then(() => {
+  // Authentication & Panel Visibility Control
+  const loginBox = document.getElementById("loginBox");
+  const dashboard = document.getElementById("dashboard");
+  const loginBtn = document.getElementById("loginBtn");
 
-// Authentication & Panel Visibility Control
-const loginBox = document.getElementById("loginBox");
-const dashboard = document.getElementById("dashboard");
-const loginBtn = document.getElementById("loginBtn");
+  if (loginBtn) {
+    loginBtn.addEventListener("click", async () => {
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value.trim();
+      if (!email || !password) return alert("Email and Password required!");
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+      } catch (err) {
+        alert("Login failed: " + err.message);
+      }
+    });
+  }
 
-if (loginBtn) {
-  loginBtn.addEventListener("click", async () => {
-    const email = document.getElementById("email").value.trim();
-    const password = document.getElementById("password").value.trim();
-    if (!email || !password) return alert("Email and Password required!");
-    try {
-      await signInWithEmailAndPassword(auth, email, password);
-    } catch (err) {
-      alert("Login failed: " + err.message);
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      if (loginBox) loginBox.style.display = "none";
+      if (dashboard) dashboard.style.display = "block";
+      loadDashboardData();
+    } else {
+      if (loginBox) loginBox.style.display = "block";
+      if (dashboard) dashboard.style.display = "none";
     }
   });
-}
-
-onAuthStateChanged(auth, (user) => {
-  if (user) {
-    if (loginBox) loginBox.style.display = "none";
-    if (dashboard) dashboard.style.display = "block";
-    loadDashboardData();
-  } else {
-    if (loginBox) loginBox.style.display = "block";
-    if (dashboard) dashboard.style.display = "none";
-  }
+}).catch((error) => {
+  console.error("Persistence error:", error);
 });
 
 // Single Product Upload
