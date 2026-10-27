@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, setPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -15,36 +15,37 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// Force logout on every fresh open so password is ALWAYS required
-signOut(auth).catch(() => {});
+// Force session persistence so it strictly requires password and clears cache on exit
+setPersistence(auth, browserSessionPersistence).then(() => {
+  const loginBox = document.getElementById("loginBox");
+  const dashboard = document.getElementById("dashboard");
+  const loginBtn = document.getElementById("loginBtn");
 
-// Login UI Elements
-const loginBox = document.getElementById("loginBox");
-const dashboard = document.getElementById("dashboard");
-const loginBtn = document.getElementById("loginBtn");
+  if (loginBtn) {
+    loginBtn.addEventListener("click", async () => {
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value.trim();
+      if (!email || !password) return alert("Email and Password required!");
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+      } catch (err) {
+        alert("Login failed: " + err.message);
+      }
+    });
+  }
 
-if (loginBtn) {
-  loginBtn.addEventListener("click", async () => {
-    const email = document.getElementById("email").value.trim();
-    const password = document.getElementById("password").value.trim();
-    if (!email || !password) return alert("Email and Password required!");
-    try {
-      await signInWithEmailAndPassword(auth, email, password);
-    } catch (err) {
-      alert("Login failed: " + err.message);
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      if (loginBox) loginBox.style.display = "none";
+      if (dashboard) dashboard.style.display = "block";
+      loadDashboardData();
+    } else {
+      if (loginBox) loginBox.style.display = "block";
+      if (dashboard) dashboard.style.display = "none";
     }
   });
-}
-
-onAuthStateChanged(auth, (user) => {
-  if (user) {
-    if (loginBox) loginBox.style.display = "none";
-    if (dashboard) dashboard.style.display = "block";
-    loadDashboardData();
-  } else {
-    if (loginBox) loginBox.style.display = "block";
-    if (dashboard) dashboard.style.display = "none";
-  }
+}).catch((error) => {
+  console.error("Auth persistence error:", error);
 });
 
 // Single Product Upload
@@ -161,7 +162,7 @@ if (bulkBtn) {
   });
 }
 
-// Load Products, Orders and Stats in Dashboard with Direct Size Stock Buttons
+// Load Products, Orders and Stats in Dashboard
 async function loadDashboardData() {
   // Load Products
   try {
@@ -185,20 +186,17 @@ async function loadDashboardData() {
             <td>${p.discountPrice ? '৳'+p.discountPrice : '-'}</td>
             <td>
               <div style="font-size:11px; line-height:1.8;">
-                <div>
-                  M Size: <b style="color:${sizes.M === 'Stock Out' ? '#fda4af' : '#4ade80'}">${sizes.M}</b>
-                  <button onclick="setSpecificSizeStock('${id}', 'M', 'Stock Out')" style="background:#32151b; color:#fda4af; padding:2px 6px; font-size:10px; border-radius:4px; margin-left:4px; cursor:pointer;">M Out</button>
-                  <button onclick="setSpecificSizeStock('${id}', 'M', 'In Stock')" style="background:#022c22; color:#4ade80; padding:2px 6px; font-size:10px; border-radius:4px; margin-left:2px; cursor:pointer;">M In</button>
+                <div>M Size: <b style="color:${sizes.M === 'Stock Out' ? '#fda4af' : '#4ade80'}">${sizes.M}</b> 
+                  <button onclick="updateSizeStock('${id}', 'M', 'Stock Out')" style="background:#32151b; color:#fda4af; padding:2px 5px; border-radius:3px; cursor:pointer; margin-left:2px;">M Out</button>
+                  <button onclick="updateSizeStock('${id}', 'M', 'In Stock')" style="background:#022c22; color:#4ade80; padding:2px 5px; border-radius:3px; cursor:pointer;">M In</button>
                 </div>
-                <div>
-                  L Size: <b style="color:${sizes.L === 'Stock Out' ? '#fda4af' : '#4ade80'}">${sizes.L}</b>
-                  <button onclick="setSpecificSizeStock('${id}', 'L', 'Stock Out')" style="background:#32151b; color:#fda4af; padding:2px 6px; font-size:10px; border-radius:4px; margin-left:4px; cursor:pointer;">L Out</button>
-                  <button onclick="setSpecificSizeStock('${id}', 'L', 'In Stock')" style="background:#022c22; color:#4ade80; padding:2px 6px; font-size:10px; border-radius:4px; margin-left:2px; cursor:pointer;">L In</button>
+                <div>L Size: <b style="color:${sizes.L === 'Stock Out' ? '#fda4af' : '#4ade80'}">${sizes.L}</b> 
+                  <button onclick="updateSizeStock('${id}', 'L', 'Stock Out')" style="background:#32151b; color:#fda4af; padding:2px 5px; border-radius:3px; cursor:pointer; margin-left:2px;">L Out</button>
+                  <button onclick="updateSizeStock('${id}', 'L', 'In Stock')" style="background:#022c22; color:#4ade80; padding:2px 5px; border-radius:3px; cursor:pointer;">L In</button>
                 </div>
-                <div>
-                  XL Size: <b style="color:${sizes.XL === 'Stock Out' ? '#fda4af' : '#4ade80'}">${sizes.XL}</b>
-                  <button onclick="setSpecificSizeStock('${id}', 'XL', 'Stock Out')" style="background:#32151b; color:#fda4af; padding:2px 6px; font-size:10px; border-radius:4px; margin-left:4px; cursor:pointer;">XL Out</button>
-                  <button onclick="setSpecificSizeStock('${id}', 'XL', 'In Stock')" style="background:#022c22; color:#4ade80; padding:2px 6px; font-size:10px; border-radius:4px; margin-left:2px; cursor:pointer;">XL In</button>
+                <div>XL Size: <b style="color:${sizes.XL === 'Stock Out' ? '#fda4af' : '#4ade80'}">${sizes.XL}</b> 
+                  <button onclick="updateSizeStock('${id}', 'XL', 'Stock Out')" style="background:#32151b; color:#fda4af; padding:2px 5px; border-radius:3px; cursor:pointer; margin-left:2px;">XL Out</button>
+                  <button onclick="updateSizeStock('${id}', 'XL', 'In Stock')" style="background:#022c22; color:#4ade80; padding:2px 5px; border-radius:3px; cursor:pointer;">XL In</button>
                 </div>
               </div>
             </td>
@@ -250,8 +248,8 @@ async function loadDashboardData() {
   }
 }
 
-// Set Specific Size Stock Directly (M Out, L Out, etc.)
-window.setSpecificSizeStock = async (id, sizeKey, statusValue) => {
+// Update Size Stock Directly
+window.updateSizeStock = async (id, sizeKey, status) => {
   try {
     const pRef = doc(db, "products", id);
     const pSnap = await getDocs(collection(db, "products"));
@@ -263,13 +261,12 @@ window.setSpecificSizeStock = async (id, sizeKey, statusValue) => {
       }
     });
 
-    currentSizes[sizeKey] = statusValue;
-
+    currentSizes[sizeKey] = status;
     await updateDoc(pRef, { sizeStatus: currentSizes });
-    alert(`Product ${sizeKey} size successfully marked as ${statusValue}!`);
+    alert(`Product ${sizeKey} size marked as ${status}!`);
     loadDashboardData();
   } catch (err) {
-    alert("Error updating size stock: " + err.message);
+    alert("Error updating stock: " + err.message);
   }
 };
 
