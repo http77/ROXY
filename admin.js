@@ -22,6 +22,7 @@ function loadCategoryDropdowns() {
   if (select) {
     select.innerHTML = categories.map(c => `<option value="${c}">${c}</option>`).join("");
   }
+  // Also update bulk boxes category select
   document.querySelectorAll(".bulk-cat-select").forEach(sel => {
     const currentVal = sel.value;
     sel.innerHTML = categories.map(c => `<option value="${c}">${c}</option>`).join("");
@@ -44,7 +45,9 @@ window.addCustomCategory = () => {
   }
 };
 
-// --- DYNAMIC BOX SYSTEM FOR BULK UPLOAD ---
+// --- DYNAMIC BULK BOX SYSTEM ---
+
+// Function to add a new product box dynamically
 window.addBulkBox = () => {
   boxCount++;
   const container = document.getElementById("bulkContainer");
@@ -56,7 +59,7 @@ window.addBulkBox = () => {
 
   boxHtml.innerHTML = `
     <div class="bulk-item-head">
-      <span>Product Box #${boxCount}</span>
+      <span>Product #${boxCount}</span>
       <button type="button" class="remove-item-btn" onclick="removeBulkBox(${boxCount})">✕ Remove</button>
     </div>
     <div class="bulk-grid">
@@ -73,7 +76,7 @@ window.addBulkBox = () => {
         <input type="number" class="bulk-price" placeholder="1500" required>
       </div>
       <div class="form-group">
-        <label>Image Link / URL</label>
+        <label>Image Link / Path</label>
         <input type="text" class="bulk-img" placeholder="images/jacket.jpg" required>
       </div>
     </div>
@@ -81,11 +84,13 @@ window.addBulkBox = () => {
   container.appendChild(boxHtml);
 };
 
+// Function to remove a specific box
 window.removeBulkBox = (id) => {
   const el = document.getElementById(`bulk-box-${id}`);
   if (el) el.remove();
 };
 
+// Upload All Bulk Products
 window.uploadBulkProducts = async () => {
   const boxes = document.querySelectorAll(".bulk-item");
   if (boxes.length === 0) {
@@ -102,7 +107,7 @@ window.uploadBulkProducts = async () => {
     const img = box.querySelector(".bulk-img").value.trim();
 
     if (!name || !price || !img) {
-      alert("সব বক্সের নাম, দাম এবং ইমেজ লিংক সঠিকভাবে পূরণ করুন!");
+      alert("Please fill in Name, Price, and Image Link for all boxes!");
       return;
     }
 
@@ -122,7 +127,7 @@ window.uploadBulkProducts = async () => {
     alert(`Successfully uploaded ${productsToUpload.length} products!`);
     document.getElementById("bulkContainer").innerHTML = "";
     boxCount = 0;
-    addBulkBox(); // Reset with 1 empty box
+    addBulkBox(); // Add 1 empty box back
     loadProductsAdmin();
   } catch (err) {
     console.error(err);
@@ -135,12 +140,13 @@ document.getElementById("singleProductForm").addEventListener("submit", async (e
   e.preventDefault();
   const name = document.getElementById("pName").value.trim();
   const category = document.getElementById("pCategory").value;
+  const subcategory = document.getElementById("pSubcategory").value.trim();
   const price = Number(document.getElementById("pPrice").value);
   const img = document.getElementById("pImg").value.trim();
 
   try {
     await addDoc(collection(db, "products"), {
-      name, category, price, img, stockStatus: "In Stock"
+      name, category, subcategory, price, img, stockStatus: "In Stock"
     });
     alert("Product Uploaded Successfully!");
     document.getElementById("singleProductForm").reset();
@@ -150,7 +156,7 @@ document.getElementById("singleProductForm").addEventListener("submit", async (e
   }
 });
 
-// Load Existing Products & Delete
+// Load Existing Products with Delete Button
 async function loadProductsAdmin() {
   const grid = document.getElementById("adminProductGrid");
   try {
@@ -177,6 +183,7 @@ async function loadProductsAdmin() {
   }
 }
 
+// Delete Product Function
 window.deleteProduct = async (id) => {
   if (confirm("Are you sure you want to delete this product?")) {
     try {
@@ -189,7 +196,7 @@ window.deleteProduct = async (id) => {
   }
 };
 
-// Init
+// Initialize Admin Page
 loadCategoryDropdowns();
-addBulkBox(); 
+addBulkBox(); // Start with 1 default box
 loadProductsAdmin();

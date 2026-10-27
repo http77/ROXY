@@ -1,95 +1,213 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ROXY | Admin Panel</title>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>ROXY | Admin</title>
 <style>
-:root{--bg:#07111f;--card:#0d1726;--text:#f8fafc;--muted:#9fb4c8;--line:#203247;--accent:#38bdf8;--danger:#ef4444}
-*{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif}
-body{background:var(--bg);color:var(--text);padding:20px;min-height:100vh}
-.container{max-width:900px;margin:auto}
-h1{margin-bottom:20px;font-size:28px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px;margin-bottom:25px}
-.card h2{font-size:20px;margin-bottom:15px;color:var(--accent)}
-.form-group{margin-bottom:12px}
-label{display:block;margin-bottom:5px;font-size:12px;color:var(--muted)}
-input,select{width:100%;padding:10px 12px;background:#050b14;border:1px solid var(--line);color:#fff;border-radius:8px;font-size:14px;outline:none}
-input:focus,select:focus{border-color:var(--accent)}
-.btn{background:var(--accent);color:#04111c;padding:12px 20px;border:0;border-radius:10px;font-weight:800;cursor:pointer;width:100%;font-size:15px;transition:.2s}
-.btn:hover{opacity:0.9}
-.btn-secondary{background:#1e293b;color:#fff;border:1px solid var(--line);margin-bottom:15px}
-.cat-row{display:flex;gap:10px;align-items:center}
-.icon-btn{width:45px;height:45px;padding:0;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+*{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif}body{background:linear-gradient(135deg,#050b14,#0b1727 55%,#10283a);color:#f8fafc}.wrap{max-width:1200px;margin:auto;padding:24px}.login,.dashboard{max-width:1050px;margin:45px auto}.login{max-width:420px;background:#0d1726;padding:30px;border-radius:24px;box-shadow:0 20px 60px rgba(15,23,42,.1)}h1{margin-bottom:8px}p.muted{color:#9fb4c8;font-size:13px;margin-bottom:20px}input,select{width:100%;padding:12px 14px;border:1px solid #203247;border-radius:12px;margin:6px 0 12px;outline:none;background:#050b14;color:#fff}button{border:0;border-radius:12px;padding:11px 16px;font-weight:800;cursor:pointer}.primary{background:#38bdf8;color:#04111c}.danger{background:#32151b;color:#fda4af}.top{display:flex;justify-content:space-between;align-items:center;gap:15px;margin-bottom:22px}.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:15px}.stat{background:#0d1726;border:1px solid #203247;border-radius:18px;padding:20px}.stat b{font-size:30px}.panel{background:#0d1726;border:1px solid #203247;border-radius:20px;padding:20px;margin-top:18px}.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}.tab{background:#101f31;color:#fff}.tab.active{background:#38bdf8;color:#04111c}.section{display:none}.section.active{display:block}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.full{grid-column:1/-1}.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:760px}th,td{padding:11px;border-bottom:1px solid #203247;text-align:left;font-size:13px}th{background:#101f31}td img{width:55px;height:65px;object-fit:cover;border-radius:8px}.hint{background:#10283a;color:#7dd3fc;padding:12px;border-radius:12px;font-size:12px;margin-bottom:15px}.product-row-actions{display:flex;gap:6px;flex-wrap:wrap}@media(max-width:700px){.cards,.form-grid{grid-template-columns:1fr}.wrap{padding:12px}.login{margin:25px 12px}}
+.category-box{display:flex;gap:6px;align-items:center}
 
-/* Dynamic Box Styling */
-.bulk-item{background:#050b14;border:1px solid var(--line);padding:15px;border-radius:14px;margin-bottom:15px;position:relative}
-.bulk-item-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-weight:bold;color:var(--accent);font-size:14px}
-.remove-item-btn{background:rgba(239,68,68,0.2);color:var(--danger);border:1px solid var(--danger);padding:4px 10px;border-radius:6px;font-size:12px;cursor:pointer}
+/* Dynamic Box Bulk Upload Styling */
+.bulk-item{background:#050b14;border:1px solid #203247;padding:15px;border-radius:14px;margin-bottom:15px;position:relative}
+.bulk-item-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-weight:bold;color:#38bdf8;font-size:14px}
+.remove-item-btn{background:rgba(239,68,68,0.2);color:#fda4af;border:1px solid #fda4af;padding:4px 10px;border-radius:6px;font-size:12px;cursor:pointer}
 .bulk-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 @media(max-width:600px){.bulk-grid{grid-template-columns:1fr}}
-
-/* Product List */
-.product-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:15px;margin-top:15px}
-.p-card{background:#050b14;border:1px solid var(--line);border-radius:12px;padding:10px;position:relative}
-.p-card img{width:100%;height:140px;object-fit:cover;border-radius:8px;margin-bottom:8px}
-.p-card h4{font-size:14px;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.p-card .p-price{color:var(--accent);font-weight:bold;font-size:14px}
-.delete-btn{background:var(--danger);color:#fff;padding:6px 10px;border-radius:8px;font-size:12px;width:100%;margin-top:8px;font-weight:bold;cursor:pointer}
-</style>
-</head>
-<body>
-
-<div class="container">
-  <h1>⚙ ROXY Admin Panel</h1>
-
-  <!-- Single Product Upload -->
-  <div class="card">
-    <h2>➕ Add Single Product</h2>
-    <form id="singleProductForm">
-      <div class="form-group">
-        <label>Product Name</label>
-        <input type="text" id="pName" placeholder="e.g. Winter Hoodie" required>
-      </div>
-      <div class="form-group">
-        <label>Category</label>
-        <div class="cat-row">
-          <select id="pCategory" required></select>
-          <button type="button" class="btn icon-btn" onclick="addCustomCategory()">+</button>
-        </div>
-      </div>
-      <div class="form-group">
-        <label>Price (৳)</label>
-        <input type="number" id="pPrice" placeholder="1200" required>
-      </div>
-      <div class="form-group">
-        <label>Image Link / URL</label>
-        <input type="text" id="pImg" placeholder="images/product1.jpg" required>
-      </div>
-      <button type="submit" class="btn">Upload Product</button>
-    </form>
-  </div>
-
-  <!-- Box-Based Bulk Upload -->
-  <div class="card">
-    <h2>📦 Bulk Product Upload (Box System)</h2>
-    <p style="color: var(--muted); font-size: 13px; margin-bottom: 15px;">প্লাস বাটনে ক্লিক করে একের পর এক বক্স বাড়িয়ে একসাথে একাধিক প্রোডাক্ট আপলোড করুন।</p>
-    
-    <div id="bulkContainer"></div>
-
-    <button type="button" class="btn btn-secondary" onclick="addBulkBox()">➕ Add Another Product Box</button>
-    <button type="button" class="btn" onclick="uploadBulkProducts()">🚀 Upload All Products</button>
-  </div>
-
-  <!-- Manage Products -->
-  <div class="card">
-    <h2>🗑 Manage Existing Products</h2>
-    <div id="adminProductGrid" class="product-list">
-      <p style="color: var(--muted);">Loading products...</p>
-    </div>
-  </div>
+</style></head><body>
+<div id="loginBox" class="login"><h1>ROXY</h1><p class="muted">Clothing Admin Panel</p><input id="email" type="email" placeholder="Admin email"><input id="password" type="password" placeholder="Password"><button id="loginBtn" class="primary" style="width:100%">Login</button></div>
+<main id="dashboard" class="dashboard" style="display:none"><div class="top"><div><h1>ROXY Admin</h1><p class="muted">Manage T-Shirts, Shirts, Pants, Winter & customer orders.</p></div><button onclick="location.href='index.html'">← Store</button></div>
+<div class="cards"><div class="stat"><small>Products</small><br><b id="productCount">0</b></div><div class="stat"><small>Orders</small><br><b id="orderCount">0</b></div><div class="stat"><small>Allowed Categories</small><br><b id="categoryCount">4</b></div></div>
+<div class="panel"><div class="tabs">
+  <button class="tab active" onclick="showSection('uploadSection',this)">＋ Add Product</button>
+  <button class="tab" onclick="showSection('bulkUploadSection',this)">＋ Bulk Upload</button>
+  <button class="tab" onclick="showSection('manageProductSection',this)">Products</button>
+  <button class="tab" onclick="showSection('orderSection',this)">Orders</button>
 </div>
 
-<script type="module" src="admin.js"></script>
-</body>
-</html>
+<section id="uploadSection" class="section active">
+  <h2>Add New Clothing Product</h2>
+  <p class="muted">Upload new products from here. Select or add dynamic categories.</p>
+  <div class="form-grid">
+    <div><label>Product Name</label><input id="prodName" placeholder="e.g. Premium Oversized T-Shirt"></div>
+    <div><label>Image URL / Path</label><input id="prodImg" placeholder="images/product.jpg"></div>
+    <div>
+      <label>Category</label>
+      <div class="category-box">
+        <select id="prodCategory" style="margin:0; flex:1;">
+          <option>T-SHIRT</option>
+          <option>SHIRT</option>
+          <option>PANT</option>
+          <option>WINTER</option>
+        </select>
+        <button type="button" class="primary" onclick="addNewCategory()" title="Add New Category" style="padding:12px 14px; margin:0;">＋</button>
+      </div>
+    </div>
+    <div><label>Sub-category</label><select id="prodSubcategory"></select></div>
+    <div><label>Regular Price</label><input id="prodPrice" type="number" min="1" placeholder="1200"></div>
+    <div><label>Discount Price (optional)</label><input id="prodDiscountPrice" type="number" min="0" placeholder="999"></div>
+    <div><label>Stock</label><select id="prodStockStatus"><option>In Stock</option><option>Stock Out</option></select></div>
+  </div>
+  <button id="uploadBtn" class="primary" style="margin-top:15px;">Upload Product</button>
+</section>
+
+<!-- Box-Based Bulk Upload Section -->
+<section id="bulkUploadSection" class="section">
+  <h2>Bulk Product Upload (Box System)</h2>
+  <p class="muted">একের পর এক বক্স বাড়িয়ে নাম, ক্যাটাগরি, প্রাইস এবং ইমেজ লিংক দিয়ে একসাথে একাধিক প্রোডাক্ট আপলোড করুন।</p>
+  
+  <div id="bulkContainer"></div>
+
+  <button type="button" class="tab" style="background:#1e293b; border:1px solid #203247; width:100%; margin-bottom:15px;" onclick="addBulkBox()">➕ Add Another Product Box</button>
+  <button type="button" id="bulkUploadBtn" class="primary" style="width:100%;">🚀 Upload All Products</button>
+</section>
+
+<section id="manageProductSection" class="section"><div class="top"><div><h2>Product Management</h2><p class="muted">Edit price/discount/stock or remove products.</p></div><button class="danger" onclick="deleteLegacyProducts()">Remove Old Jersey Products</button></div><div class="table-wrap"><table><thead><tr><th>Image</th><th>Product</th><th>Category</th><th>Sub-category</th><th>Price</th><th>Discount</th><th>Stock</th><th>Action</th></tr></thead><tbody id="manageProductList"></tbody></table></div></section>
+<section id="orderSection" class="section"><h2>Customer Orders</h2><p class="muted">Order details are kept; this panel is now clothing-themed.</p><div class="table-wrap"><table><thead><tr><th>Tracking</th><th>Name</th><th>Phone</th><th>Product</th><th>Size</th><th>Address</th><th>Payment</th><th>Status</th><th>Action</th></tr></thead><tbody id="orderList"></tbody></table></div></section>
+</div></main>
+<script>
+const subs={"T-SHIRT":["Basic","Oversized","Graphic","Polo"],"SHIRT":["Formal","Casual","Oversized","Printed"],"PANT":["Jeans","Cargo","Chino","Formal"],"WINTER":["Hoodie","Jacket","Sweater","Thermal"]};
+function updateSubs(){
+  const c=document.getElementById('prodCategory').value;
+  const subList = subs[c] || ["General"];
+  document.getElementById('prodSubcategory').innerHTML=subList.map(x=>`<option>${x}</option>`).join('');
+}
+function showSection(id,btn){
+  document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+}
+function addNewCategory(){
+  const newCat = prompt("Enter new category name:");
+  if(newCat && newCat.trim() !== ""){
+    const formattedCat = newCat.trim().toUpperCase();
+    const select = document.getElementById('prodCategory');
+    let exists = false;
+    for(let i=0; i<select.options.length; i++){
+      if(select.options[i].value === formattedCat) exists = true;
+    }
+    if(!exists){
+      const opt = document.createElement('option');
+      opt.value = formattedCat;
+      opt.innerHTML = formattedCat;
+      select.appendChild(opt);
+      select.value = formattedCat;
+      subs[formattedCat] = ["General"];
+      updateSubs();
+      alert("Category added successfully!");
+    } else {
+      alert("Category already exists!");
+    }
+  }
+}
+document.getElementById('prodCategory').addEventListener('change',updateSubs);
+updateSubs();
+</script><script type="module" src="admin.js"></script></body></html>
+```[cite: 5, 6]
+
+---
+
+### আপনার আগের `admin.js` ফাইলে শুধু বাল্ক আপলোডের লজিকটুকু আপডেট করতে হবে:
+আপনার `admin.js` ফাইলের নিচের অংশটুকু (যেখানে পুরানো `bulkUploadBtn` হ্যান্ডলার ছিল) পরিবর্তন করে নিচের কোডটি বসিয়ে দিন[cite: 6]:
+
+```javascript
+// --- DYNAMIC BOX SYSTEM FOR BULK UPLOAD ---
+let boxCount = 0;
+
+window.addBulkBox = () => {
+  boxCount++;
+  const container = document.getElementById("bulkContainer");
+  if (!container) return;
+  const boxHtml = document.createElement("div");
+  boxHtml.className = "bulk-item";
+  boxHtml.id = `bulk-box-${boxCount}`;
+
+  // Get current categories from the single product dropdown if available
+  const catSelect = document.getElementById("prodCategory");
+  let catOptions = '<option value="T-SHIRT">T-SHIRT</option><option value="SHIRT">SHIRT</option><option value="PANT">PANT</option><option value="WINTER">WINTER</option>';
+  if (catSelect && catSelect.innerHTML) {
+    catOptions = catSelect.innerHTML;
+  }
+
+  boxHtml.innerHTML = `
+    <div class="bulk-item-head">
+      <span>Product Box #${boxCount}</span>
+      <button type="button" class="remove-item-btn" onclick="removeBulkBox(${boxCount})">✕ Remove</button>
+    </div>
+    <div class="bulk-grid">
+      <div style="margin-bottom:10px;">
+        <label style="font-size:12px; color:#9fb4c8; display:block; margin-bottom:4px;">Product Name</label>
+        <input type="text" class="bulk-name" placeholder="e.g. Winter Hoodie" required style="margin:0;">
+      </div>
+      <div style="margin-bottom:10px;">
+        <label style="font-size:12px; color:#9fb4c8; display:block; margin-bottom:4px;">Category</label>
+        <select class="bulk-cat" style="margin:0;">${catOptions}</select>
+      </div>
+      <div style="margin-bottom:10px;">
+        <label style="font-size:12px; color:#9fb4c8; display:block; margin-bottom:4px;">Price (৳)</label>
+        <input type="number" class="bulk-price" placeholder="1500" required style="margin:0;">
+      </div>
+      <div style="margin-bottom:10px;">
+        <label style="font-size:12px; color:#9fb4c8; display:block; margin-bottom:4px;">Image Link / URL</label>
+        <input type="text" class="bulk-img" placeholder="images/product.jpg" required style="margin:0;">
+      </div>
+    </div>
+  `;
+  container.appendChild(boxHtml);
+};
+
+window.removeBulkBox = (id) => {
+  const el = document.getElementById(`bulk-box-${id}`);
+  if (el) el.remove();
+};
+
+// Handle Bulk Upload Click
+const bulkBtn = document.getElementById("bulkUploadBtn");
+if (bulkBtn) {
+  bulkBtn.addEventListener("click", async () => {
+    const boxes = document.querySelectorAll(".bulk-item");
+    if (boxes.length === 0) {
+      alert("Please add at least one product box!");
+      return;
+    }
+
+    const productsToUpload = [];
+
+    for (let box of boxes) {
+      const name = box.querySelector(".bulk-name").value.trim();
+      const category = box.querySelector(".bulk-cat").value;
+      const price = Number(box.querySelector(".bulk-price").value);
+      const img = box.querySelector(".bulk-img").value.trim();
+
+      if (!name || !price || !img) {
+        alert("সব বক্সের নাম, দাম এবং ইমেজ লিংক সঠিকভাবে পূরণ করুন!");
+        return;
+      }
+
+      productsToUpload.push({
+        name,
+        category,
+        price,
+        img,
+        stockStatus: "In Stock"
+      });
+    }
+
+    try {
+      for (let p of productsToUpload) {
+        await addDoc(collection(db, "products"), p);
+      }
+      alert(`Successfully uploaded ${productsToUpload.length} products!`);
+      document.getElementById("bulkContainer").innerHTML = "";
+      boxCount = 0;
+      addBulkBox(); // Reset with 1 empty box
+      if (typeof loadProducts === "function") loadProducts();
+    } catch (err) {
+      console.error(err);
+      alert("Error uploading products: " + err.message);
+    }
+  });
+}
+
+// Initialize with 1 default box on load
+addBulkBox();
+```[cite: 6]
+
+এখন আপনার অ্যাডমিন প্যানেলের আগের ডিজাইন, অর্ডার লিস্ট এবং অন্যান্য সব ফিচার একদম অক্ষুণ্ণ থাকবে, এবং বাল্ক আপলোড ট্যাবে গিয়ে আপনি ইচ্ছামতো বক্স বাড়িয়ে একসাথে একাধিক প্রোডাক্ট খুব সহজে আপলোড করতে পারবেন[cite: 5, 6]।
