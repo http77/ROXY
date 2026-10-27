@@ -10,4 +10,86 @@
 body{background:var(--bg);color:var(--text);padding:20px;min-height:100vh}
 .container{max-width:900px;margin:auto}
 h1{margin-bottom:20px;font-size:28px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:18px;
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px;margin-bottom:25px}
+.card h2{font-size:20px;margin-bottom:15px;color:var(--accent)}
+.form-group{margin-bottom:12px}
+label{display:block;margin-bottom:5px;font-size:12px;color:var(--muted)}
+input,select{width:100%;padding:10px 12px;background:#050b14;border:1px solid var(--line);color:#fff;border-radius:8px;font-size:14px;outline:none}
+input:focus,select:focus{border-color:var(--accent)}
+.btn{background:var(--accent);color:#04111c;padding:12px 20px;border:0;border-radius:10px;font-weight:800;cursor:pointer;width:100%;font-size:15px;transition:.2s}
+.btn:hover{opacity:0.9}
+.btn-secondary{background:#1e293b;color:#fff;border:1px solid var(--line);margin-bottom:15px}
+.cat-row{display:flex;gap:10px;align-items:center}
+.icon-btn{width:45px;height:45px;padding:0;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+
+/* Dynamic Box Styling */
+.bulk-item{background:#050b14;border:1px solid var(--line);padding:15px;border-radius:14px;margin-bottom:15px;position:relative}
+.bulk-item-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-weight:bold;color:var(--accent);font-size:14px}
+.remove-item-btn{background:rgba(239,68,68,0.2);color:var(--danger);border:1px solid var(--danger);padding:4px 10px;border-radius:6px;font-size:12px;cursor:pointer}
+.bulk-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:600px){.bulk-grid{grid-template-columns:1fr}}
+
+/* Product List */
+.product-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:15px;margin-top:15px}
+.p-card{background:#050b14;border:1px solid var(--line);border-radius:12px;padding:10px;position:relative}
+.p-card img{width:100%;height:140px;object-fit:cover;border-radius:8px;margin-bottom:8px}
+.p-card h4{font-size:14px;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.p-card .p-price{color:var(--accent);font-weight:bold;font-size:14px}
+.delete-btn{background:var(--danger);color:#fff;padding:6px 10px;border-radius:8px;font-size:12px;width:100%;margin-top:8px;font-weight:bold;cursor:pointer}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h1>⚙ ROXY Admin Panel</h1>
+
+  <!-- Single Product Upload -->
+  <div class="card">
+    <h2>➕ Add Single Product</h2>
+    <form id="singleProductForm">
+      <div class="form-group">
+        <label>Product Name</label>
+        <input type="text" id="pName" placeholder="e.g. Winter Hoodie" required>
+      </div>
+      <div class="form-group">
+        <label>Category</label>
+        <div class="cat-row">
+          <select id="pCategory" required></select>
+          <button type="button" class="btn icon-btn" onclick="addCustomCategory()">+</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Price (৳)</label>
+        <input type="number" id="pPrice" placeholder="1200" required>
+      </div>
+      <div class="form-group">
+        <label>Image Link / URL</label>
+        <input type="text" id="pImg" placeholder="images/product1.jpg" required>
+      </div>
+      <button type="submit" class="btn">Upload Product</button>
+    </form>
+  </div>
+
+  <!-- Box-Based Bulk Upload -->
+  <div class="card">
+    <h2>📦 Bulk Product Upload (Box System)</h2>
+    <p style="color: var(--muted); font-size: 13px; margin-bottom: 15px;">প্লাস বাটনে ক্লিক করে একের পর এক বক্স বাড়িয়ে একসাথে একাধিক প্রোডাক্ট আপলোড করুন।</p>
+    
+    <div id="bulkContainer"></div>
+
+    <button type="button" class="btn btn-secondary" onclick="addBulkBox()">➕ Add Another Product Box</button>
+    <button type="button" class="btn" onclick="uploadBulkProducts()">🚀 Upload All Products</button>
+  </div>
+
+  <!-- Manage Products -->
+  <div class="card">
+    <h2>🗑 Manage Existing Products</h2>
+    <div id="adminProductGrid" class="product-list">
+      <p style="color: var(--muted);">Loading products...</p>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="admin.js"></script>
+</body>
+</html>
