@@ -1,301 +1,160 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import {
-    getFirestore,
-    collection,
-    getDocs,
-    addDoc,
-    doc,
-    deleteDoc,
-    updateDoc
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import {
-    getAuth,
-    signInWithEmailAndPassword
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, collection, getDocs, addDoc, doc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-// =====================================
-// FIREBASE CONFIGURATION
-// =====================================
-const firebaseConfig = {
-    apiKey: "AIzaSyCyqVbz009_W67poKQgjHLuGsLQTUFHtHw",
-    authDomain: "bahar-sports-f2a70.firebaseapp.com",
-    projectId: "bahar-sports-f2a70",
-    storageBucket: "bahar-sports-f2a70.firebasestorage.app",
-    messagingSenderId: "254621686378",
-    appId: "1:254621686378:web:4edfdf85c40362a51cc813"
-};
+const firebaseConfig={apiKey:"AIzaSyCyqVbz009_W67poKQgjHLuGsLQTUFHtHw",authDomain:"bahar-sports-f2a70.firebaseapp.com",projectId:"bahar-sports-f2a70",storageBucket:"bahar-sports-f2a70.firebasestorage.app",messagingSenderId:"254621686378",appId:"1:254621686378:web:4edfdf85c40362a51cc813"};
 
-// =====================================
-// INITIALIZE FIREBASE
-// =====================================
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
+const app=initializeApp(firebaseConfig),db=getFirestore(app),auth=getAuth(app);
 
-// =====================================
-// ADMIN LOGIN
-// =====================================
-document.getElementById("loginBtn").addEventListener("click", function () {
-    const email = document.getElementById("email").value.trim();
-    const password = document.getElementById("password").value.trim();
+// Allowed categories including WINTER and standard clothing categories
+const allowed=["T-SHIRT","SHIRT","PANT","WINTER"];
 
-    if (!email || !password) {
-        alert("Please enter both email and password!");
-        return;
-    }
-
-    signInWithEmailAndPassword(auth, email, password)
-    .then(() => {
-        alert("✅ Login Successful");
-        document.getElementById("loginBox").style.display = "none";
-        document.getElementById("dashboard").style.display = "block";
-        loadOrders();
-        loadManageProducts();
-    })
-    .catch((error) => {
-        console.error("Login Error:", error);
-        alert("Login Failed: " + error.message);
-    });
+const loginBtn=document.getElementById("loginBtn");
+loginBtn.addEventListener("click",async()=>{
+  const email=document.getElementById("email").value.trim(),password=document.getElementById("password").value.trim();
+  if(!email||!password)return alert("Please enter email and password.");
+  loginBtn.disabled=true;
+  try{
+    await signInWithEmailAndPassword(auth,email,password);
+    document.getElementById("loginBox").style.display="none";
+    document.getElementById("dashboard").style.display="block";
+    await Promise.all([loadProducts(),loadOrders()]);
+  }catch(e){
+    alert("Login failed: "+e.message);
+  }finally{
+    loginBtn.disabled=false;
+  }
 });
 
-// =====================================
-// UPLOAD NEW PRODUCT
-// =====================================
-document.getElementById("uploadBtn").addEventListener("click", async function () {
-    const name = document.getElementById("prodName").value.trim();
-    const price = Number(document.getElementById("prodPrice").value);
-    const discountInput = document.getElementById("prodDiscountPrice");
-    let discountPrice = null;
+function esc(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]))}
 
-    if (discountInput) {
-        const discountValue = discountInput.value.trim();
-        if (discountValue !== "") {
-            discountPrice = Number(discountValue);
-        }
+async function loadProducts(){
+  const snap=await getDocs(collection(db,"products"));
+  document.getElementById("productCount").textContent=snap.size;
+  const list=document.getElementById("manageProductList");
+  const rows=snap.docs.map(d=>{const p=d.data(),cat=String(p.category||"").toUpperCase();return {id:d.id,p,cat}});
+  if(!rows.length){list.innerHTML='<tr><td colspan="8">No products found.</td></tr>';return}
+  list.innerHTML=rows.map(({id,p,cat})=>`<tr id="prod-${id}"><td><img src="${esc(p.img)}"></td><td><b>${esc(p.name)}</b></td><td>${esc(cat||"—")}</td><td>${esc(p.subcategory||"—")}</td><td>৳${Number(p.price||0)}</td><td><input id="disc-${id}" type="number" value="${p.discountPrice??""}" style="width:110px;margin:0"></td><td><select id="stock-${id}" style="width:125px;margin:0"><option ${p.stockStatus==="In Stock"?"selected":""}>In Stock</option><option ${p.stockStatus==="Stock Out"?"selected":""}>Stock Out</option></select></td><td><div class="product-row-actions"><button class="primary" onclick="updateProduct('${id}',${Number(p.price||0)})">Save</button><button class="danger" onclick="deleteProduct('${id}')">Delete</button></div></td></tr>`).join("");
+}
+
+window.updateProduct=async(id,regular)=>{
+  const d=document.getElementById(`disc-${id}`).value.trim(),discount=d===""?null:Number(d),stock=document.getElementById(`stock-${id}`).value;
+  if(discount!==null&&(isNaN(discount)||discount<0||discount>=regular))return alert("Discount must be less than regular price.");
+  try{
+    await updateDoc(doc(db,"products",id),{discountPrice:discount,stockStatus:stock});
+    alert("Product updated.");
+    loadProducts();
+  }catch(e){
+    alert(e.message);
+  }
+};
+
+window.deleteProduct=async id=>{
+  if(!confirm("Delete this product permanently?"))return;
+  try{
+    await deleteDoc(doc(db,"products",id));
+    loadProducts();
+  }catch(e){
+    alert(e.message);
+  }
+};
+
+window.deleteLegacyProducts=async()=>{
+  if(!confirm("This will permanently delete every product whose category is not recognized. Continue?"))return;
+  try{
+    const snap=await getDocs(collection(db,"products"));
+    let n=0;
+    for(const d of snap.docs){
+      const cat=String(d.data().category||"").toUpperCase();
+      if(!allowed.includes(cat)){
+        await deleteDoc(doc(db,"products",d.id));
+        n++;
+      }
     }
+    alert(`Removed ${n} old product(s).`);
+    loadProducts();
+  }catch(e){
+    alert("Cleanup failed: "+e.message);
+  }
+};
 
-    const category = document.getElementById("prodCategory").value;
-    const stockStatus = document.getElementById("prodStockStatus").value;
-    const img = document.getElementById("prodImg").value.trim();
+async function loadOrders(){
+  const snap=await getDocs(collection(db,"orders"));
+  document.getElementById("orderCount").textContent=snap.size;
+  const list=document.getElementById("orderList");
+  if(snap.empty){list.innerHTML='<tr><td colspan="9">No orders found.</td></tr>';return}
+  list.innerHTML=snap.docs.map(d=>{
+    const x=d.data();
+    return `<tr><td>${esc(x.trackingCode||x.orderId||d.id.slice(0,8).toUpperCase())}</td><td>${esc(x.name||"N/A")}</td><td>${esc(x.phone||"N/A")}</td><td>${esc(x.product||"N/A")}</td><td>${esc(x.size||"N/A")}</td><td>${esc(x.address||"N/A")}</td><td>${esc(x.payment||"Cash on Delivery")}</td><td><select id="status-${d.id}" style="margin:0;width:120px"><option ${x.status==="Pending"||!x.status?"selected":""}>Pending</option><option ${x.status==="Confirmed"?"selected":""}>Confirmed</option><option ${x.status==="Processing"?"selected":""}>Processing</option><option ${x.status==="Shipped"?"selected":""}>Shipped</option><option ${x.status==="Delivered"?"selected":""}>Delivered</option><option ${x.status==="Cancelled"?"selected":""}>Cancelled</option></select></td><td><button class="primary" onclick="updateOrderStatus('${d.id}')">Save</button></td></tr>`;
+  }).join("");
+}
 
-    if (!name || !price || !img) {
-        alert("Please fill in all the product fields!");
-        return;
-    }
+window.updateOrderStatus=async id=>{
+  try{
+    await updateDoc(doc(db,"orders",id),{status:document.getElementById(`status-${id}`).value});
+    alert("Order status updated.");
+  }catch(e){
+    alert(e.message);
+  }
+};
 
-    if (discountPrice !== null && (isNaN(discountPrice) || discountPrice < 0 || discountPrice >= price)) {
-        alert("Discount Price must be less than Regular Price!");
-        return;
-    }
+// Single Product Upload Handler
+document.getElementById("uploadBtn").addEventListener("click",async()=>{
+  const name=document.getElementById("prodName").value.trim(),
+        img=document.getElementById("prodImg").value.trim(),
+        category=document.getElementById("prodCategory").value,
+        subcategory=document.getElementById("prodSubcategory").value,
+        price=Number(document.getElementById("prodPrice").value),
+        discountRaw=document.getElementById("prodDiscountPrice").value.trim(),
+        discountPrice=discountRaw===""?null:Number(discountRaw),
+        stockStatus=document.getElementById("prodStockStatus").value;
+  
+  if(!name||!img||!price)return alert("Product name, image and price are required.");
+  if(discountPrice!==null&&(isNaN(discountPrice)||discountPrice<0||discountPrice>=price))return alert("Discount must be less than regular price.");
+  
+  try{
+    await addDoc(collection(db,"products"),{name,img,category,subcategory,price,discountPrice,stockStatus,createdAt:new Date()});
+    alert("Product uploaded successfully!");
+    document.getElementById("prodName").value="";
+    document.getElementById("prodImg").value="";
+    document.getElementById("prodPrice").value="";
+    document.getElementById("prodDiscountPrice").value="";
+    loadProducts();
+  }catch(e){
+    alert("Upload failed: "+e.message);
+  }
+});
 
+// Bulk Product Upload Handler
+const bulkUploadBtn = document.getElementById("bulkUploadBtn");
+if(bulkUploadBtn){
+  bulkUploadBtn.addEventListener("click", async () => {
+    const bulkData = document.getElementById("bulkDataInput").value.trim();
+    if(!bulkData) return alert("Please enter JSON data for bulk upload.");
+    bulkUploadBtn.disabled = true;
     try {
+      const productsArray = JSON.parse(bulkData);
+      if(!Array.isArray(productsArray)) throw new Error("JSON data must be an array of products.");
+      
+      for(let prod of productsArray){
         await addDoc(collection(db, "products"), {
-            name: name,
-            price: price,
-            discountPrice: discountPrice,
-            category: category,
-            stockStatus: stockStatus,
-            img: img,
-            createdAt: new Date()
+          name: prod.name || "Unnamed Product",
+          img: prod.img || "images/product.jpg",
+          category: (prod.category || "T-SHIRT").toUpperCase(),
+          subcategory: prod.subcategory || "General",
+          price: Number(prod.price || 0),
+          discountPrice: prod.discountPrice ? Number(prod.discountPrice) : null,
+          stockStatus: prod.stockStatus || "In Stock",
+          createdAt: new Date()
         });
-
-        alert("✅ Product Uploaded Successfully!");
-
-        document.getElementById("prodName").value = "";
-        document.getElementById("prodPrice").value = "";
-        if (discountInput) discountInput.value = "";
-        document.getElementById("prodImg").value = "";
-
-        loadManageProducts();
-    } catch (error) {
-        console.error("Product Upload Error:", error);
-        alert("❌ Error uploading product: " + error.message);
+      }
+      alert("All products uploaded successfully in bulk!");
+      document.getElementById("bulkDataInput").value = "";
+      loadProducts();
+    } catch(e) {
+      alert("Bulk upload failed: " + e.message);
+    } finally {
+      bulkUploadBtn.disabled = false;
     }
-});
-
-// =====================================
-// LOAD ORDERS
-// =====================================
-async function loadOrders() {
-    const list = document.getElementById("orderList");
-    if (!list) return;
-
-    list.innerHTML = `<tr><td colspan="9" style="text-align:center;">Loading orders...</td></tr>`;
-
-    try {
-        const snapshot = await getDocs(collection(db, "orders"));
-        list.innerHTML = "";
-
-        if (snapshot.empty) {
-            list.innerHTML = `<tr><td colspan="9" style="text-align:center;">No orders found.</td></tr>`;
-            return;
-        }
-
-        snapshot.forEach((docSnap) => {
-            const data = docSnap.data();
-            const docId = docSnap.id;
-            const trackingCode = data.trackingCode || data.orderId || docId.slice(0, 8).toUpperCase();
-            const currentStatus = data.status || "Pending";
-
-            const row = `
-                <tr id="order-row-${docId}">
-                    <td><strong style="color:#2563eb;">${trackingCode}</strong></td>
-                    <td>${data.name || "N/A"}</td>
-                    <td>${data.phone || "N/A"}</td>
-                    <td>${data.product || "N/A"}</td>
-                    <td>${data.size || "N/A"}</td>
-                    <td>${data.address || "N/A"}</td>
-                    <td>${data.payment || "N/A"}</td>
-                    <td>
-                        <select id="order-status-${docId}" style="padding:6px; border-radius:6px; border:1px solid #ccc; margin-bottom:5px;">
-                            <option value="Pending" ${currentStatus === "Pending" ? "selected" : ""}>Pending</option>
-                            <option value="Confirmed" ${currentStatus === "Confirmed" ? "selected" : ""}>Confirmed</option>
-                            <option value="Processing" ${currentStatus === "Processing" ? "selected" : ""}>Processing</option>
-                            <option value="Shipped" ${currentStatus === "Shipped" ? "selected" : ""}>Shipped</option>
-                            <option value="Delivered" ${currentStatus === "Delivered" ? "selected" : ""}>Delivered</option>
-                            <option value="Cancelled" ${currentStatus === "Cancelled" ? "selected" : ""}>Cancelled</option>
-                        </select>
-                        <button class="table-confirm-btn" onclick="updateOrderStatus('${docId}')">Update</button>
-                    </td>
-                    <td>
-                        <button class="table-confirm-btn" onclick="confirmAndDeleteOrder('${docId}')">Confirm</button>
-                    </td>
-                </tr>
-            `;
-            list.innerHTML += row;
-        });
-    } catch (error) {
-        console.error("Error loading orders:", error);
-        list.innerHTML = `<tr><td colspan="9" style="text-align:center; color:red;">Failed to load orders.</td></tr>`;
-    }
+  });
 }
-
-// =====================================
-// UPDATE ORDER STATUS
-// =====================================
-window.updateOrderStatus = async function(docId) {
-    const statusSelect = document.getElementById(`order-status-${docId}`);
-    if (!statusSelect) {
-        alert("❌ Status option not found!");
-        return;
-    }
-
-    const newStatus = statusSelect.value;
-
-    try {
-        await updateDoc(doc(db, "orders", docId), { status: newStatus });
-        alert("✅ Order status updated!");
-        loadOrders();
-    } catch (error) {
-        console.error("Status update error:", error);
-        alert("❌ Failed to update order status: " + error.message);
-    }
-};
-
-// =====================================
-// LOAD PRODUCTS
-// =====================================
-async function loadManageProducts() {
-    try {
-        const querySnapshot = await getDocs(collection(db, "products"));
-        let manageList = document.getElementById("manageProductList");
-        if (!manageList) return;
-
-        manageList.innerHTML = "";
-
-        if (querySnapshot.empty) {
-            manageList.innerHTML = `<tr><td colspan="6" style="text-align:center;">No products found.</td></tr>`;
-            return;
-        }
-
-        querySnapshot.forEach((documentSnapshot) => {
-            let prod = documentSnapshot.data();
-            let prodId = documentSnapshot.id;
-            let currentStatus = prod.stockStatus || "In Stock";
-            let currentDiscount = prod.discountPrice ?? "";
-
-            let row = `
-                <tr id="prod-row-${prodId}">
-                    <td><img src="${prod.img}" width="50" style="border-radius:5px; object-fit:cover;"></td>
-                    <td>${prod.name}</td>
-                    <td>৳${prod.price}</td>
-                    <td>
-                        <input type="number" id="discount_${prodId}" class="table-input" value="${currentDiscount}" min="0" placeholder="No Discount">
-                    </td>
-                    <td>
-                        <select id="status_${prodId}" style="padding:6px; border-radius:6px;">
-                            <option value="In Stock" ${currentStatus === "In Stock" ? "selected" : ""}>In Stock</option>
-                            <option value="Stock Out" ${currentStatus === "Stock Out" ? "selected" : ""}>Stock Out</option>
-                            <option value="M Size Stock Out" ${currentStatus === "M Size Stock Out" ? "selected" : ""}>M Size Stock Out</option>
-                            <option value="L Size Stock Out" ${currentStatus === "L Size Stock Out" ? "selected" : ""}>L Size Stock Out</option>
-                            <option value="XL Size Stock Out" ${currentStatus === "XL Size Stock Out" ? "selected" : ""}>XL Size Stock Out</option>
-                            <option value="XXL Size Stock Out" ${currentStatus === "XXL Size Stock Out" ? "selected" : ""}>XXL Size Stock Out</option>
-                            <option value="3XL Size Stock Out" ${currentStatus === "3XL Size Stock Out" ? "selected" : ""}>3XL Size Stock Out</option>
-                        </select>
-                    </td>
-                    <td>
-                        <button class="table-confirm-btn" onclick="updateProduct('${prodId}', ${Number(prod.price)})">Update</button>
-                    </td>
-                </tr>
-            `;
-            manageList.innerHTML += row;
-        });
-    } catch (error) {
-        console.error("Error loading products for management: ", error);
-    }
-}
-
-// =====================================
-// UPDATE PRODUCT (DISCOUNT + STOCK)
-// =====================================
-window.updateProduct = async function(prodId, regularPrice) {
-    let discountInput = document.getElementById(`discount_${prodId}`);
-    let statusInput = document.getElementById(`status_${prodId}`);
-
-    if (!discountInput || !statusInput) {
-        alert("❌ Product controls not found.");
-        return;
-    }
-
-    let discountValue = discountInput.value.trim();
-    let discountPrice = discountValue === "" ? null : Number(discountValue);
-    let selectedStatus = statusInput.value;
-
-    if (discountPrice !== null && (isNaN(discountPrice) || discountPrice < 0 || discountPrice >= Number(regularPrice))) {
-        alert("Discount Price must be less than Regular Price!");
-        return;
-    }
-
-    try {
-        const prodRef = doc(db, "products", prodId);
-        await updateDoc(prodRef, {
-            discountPrice: discountPrice,
-            stockStatus: selectedStatus
-        });
-
-        alert("✅ Product updated successfully!");
-        loadManageProducts();
-    } catch (error) {
-        console.error("Error updating product: ", error);
-        alert("❌ Failed to update product: " + error.message);
-    }
-};
-
-// =====================================
-// CONFIRM + DELETE ORDER
-// =====================================
-window.confirmAndDeleteOrder = async function(docId) {
-    if (confirm("Are you sure you want to confirm and delete this order?")) {
-        try {
-            await deleteDoc(doc(db, "orders", docId));
-            let rowElement = document.getElementById(`order-row-${docId}`);
-            if (rowElement) {
-                rowElement.remove();
-            }
-            alert("✅ Order confirmed and deleted successfully!");
-        } catch (error) {
-            console.error("Error deleting order: ", error);
-            alert("❌ Failed to delete the order.");
-        }
-    }
-};
