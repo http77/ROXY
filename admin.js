@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, setPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -15,7 +15,12 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// Authentication & Panel Visibility Control (Fixing auto-login issue)
+// Force session persistence so it requires password on browser restart / re-entry
+setPersistence(auth, browserSessionPersistence).catch((error) => {
+  console.error("Persistence error:", error);
+});
+
+// Authentication & Panel Visibility Control
 const loginBox = document.getElementById("loginBox");
 const dashboard = document.getElementById("dashboard");
 const loginBtn = document.getElementById("loginBtn");
@@ -183,11 +188,11 @@ async function loadDashboardData() {
             <td>
               <div style="font-size:11px; line-height:1.6;">
                 M: <span style="color:${sizes.M === 'Stock Out' ? '#fda4af' : '#4ade80'}">${sizes.M}</span>
-                <button onclick="toggleSizeStock('${id}', 'M', '${sizes.M}')" style="padding:2px 6px; font-size:10px; margin-left:4px; background:${sizes.M === 'Stock Out' ? '#38bdf8' : '#32151b'}; color:#fff; border-radius:4px;">Toggle</button><br>
+                <button onclick="toggleSizeStock('${id}', 'M', '${sizes.M}')" style="padding:2px 6px; font-size:10px; margin-left:4px; background:${sizes.M === 'Stock Out' ? '#38bdf8' : '#32151b'}; color:#fff; border-radius:4px; cursor:pointer;">Toggle</button><br>
                 L: <span style="color:${sizes.L === 'Stock Out' ? '#fda4af' : '#4ade80'}">${sizes.L}</span>
-                <button onclick="toggleSizeStock('${id}', 'L', '${sizes.L}')" style="padding:2px 6px; font-size:10px; margin-left:4px; background:${sizes.L === 'Stock Out' ? '#38bdf8' : '#32151b'}; color:#fff; border-radius:4px;">Toggle</button><br>
+                <button onclick="toggleSizeStock('${id}', 'L', '${sizes.L}')" style="padding:2px 6px; font-size:10px; margin-left:4px; background:${sizes.L === 'Stock Out' ? '#38bdf8' : '#32151b'}; color:#fff; border-radius:4px; cursor:pointer;">Toggle</button><br>
                 XL: <span style="color:${sizes.XL === 'Stock Out' ? '#fda4af' : '#4ade80'}">${sizes.XL}</span>
-                <button onclick="toggleSizeStock('${id}', 'XL', '${sizes.XL}')" style="padding:2px 6px; font-size:10px; margin-left:4px; background:${sizes.XL === 'Stock Out' ? '#38bdf8' : '#32151b'}; color:#fff; border-radius:4px;">Toggle</button>
+                <button onclick="toggleSizeStock('${id}', 'XL', '${sizes.XL}')" style="padding:2px 6px; font-size:10px; margin-left:4px; background:${sizes.XL === 'Stock Out' ? '#38bdf8' : '#32151b'}; color:#fff; border-radius:4px; cursor:pointer;">Toggle</button>
               </div>
             </td>
             <td>
@@ -244,7 +249,6 @@ window.toggleSizeStock = async (id, sizeKey, currentStatus) => {
   try {
     const pRef = doc(db, "products", id);
     const pSnap = await getDocs(collection(db, "products"));
-    // Find current product sizes
     let currentSizes = { M: "In Stock", L: "In Stock", XL: "In Stock" };
     pSnap.docs.forEach(d => {
       if(d.id === id && d.data().sizeStatus) {
